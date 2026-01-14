@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PMTiles – Protomaps Basemap</title>
+
+  <!-- MapLibre -->
+  <link rel="stylesheet" href="css/maplibre-gl-3.6.2.css" />
+  <script src="js/vendors/maplibre-3.6.2.js"></script>
+
+  <!-- PMTiles -->
+   <script src="js/vendors/maplibre-3.6.2.js"></script>
+  <script src="js/vendors/pmtiles-3.0.6.js"></script>
+
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+  // Enregistrement du protocole PMTiles
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+
+  const PMTILES_URL =
+    "pmtiles://http://192.168.10.3:8898/pmtiles/20260114.pmtiles";
+
+  const map = new maplibregl.Map({
+    container: "map",
+
+    style: {
+      version: 8,
+
+      glyphs: "http://192.168.10.3:8898/fonts/{fontstack}/{range}.pbf",
+
+      sources: {
+        osm: {
+          type: "vector",
+          url: PMTILES_URL,
+          minzoom: 0,
+          maxzoom: 15
+        }
+      },
+
+      layers: [
+        /* ---------- BACKGROUND ---------- */
+        {
+          id: "background",
+          type: "background",
+          paint: {
+            "background-color": "#ddeeff"
+          }
+        },
+
+        /* ---------- EARTH / LAND ---------- */
+        {
+          id: "earth",
+          type: "fill",
+          source: "osm",
+          "source-layer": "earth",
+          paint: {
+            "fill-color": "#f2efe9"
+          }
+        },
+
+        {
+          id: "landuse",
+          type: "fill",
+          source: "osm",
+          "source-layer": "landuse",
+          paint: {
+            "fill-color": "#e8e6df"
+          }
+        },
+
+        /* ---------- WATER ---------- */
+        {
+          "id": "water-fill",
+          "type": "fill",
+          "source": "osm",
+          "source-layer": "water",
+          "filter": ["==", ["geometry-type"], "Polygon"],
+          "paint": {
+            "fill-color": "#a0c8f0"
+          }
+        },
+
+        {
+          "id": "water-line",
+          "type": "line",
+          "source": "osm",
+          "source-layer": "water",
+          "filter": ["==", ["geometry-type"], "LineString"],
+          "paint": {
+            "line-color": "#a0c8f0",
+            "line-width": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              5, 0.4,
+              12, 2
+            ]
+          }
+        },
+
+        /* ---------- ROADS ---------- */
+        {
+          id: "roads",
+          type: "line",
+          source: "osm",
+          "source-layer": "roads",
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              5, 0.3,
+              10, 1,
+              14, 3
+            ]
+          }
+        },
+
+        /* ROAD LABELS */
+        {
+          id: "road-labels",
+          type: "symbol",
+          source: "osm",
+          "source-layer": "roads",
+          minzoom: 10,
+          layout: {
+            "symbol-placement": "line",
+            "text-field": ["coalesce", ["get", "name"], ["get", "ref"]],
+            "text-font": ["Noto Sans Regular"],
+            "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10, 10,
+            14, 14
+            ]
+          },
+          paint: {
+            "text-color": "#444444",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1
+          }
+        },
+
+        /* ---------- BUILDINGS ---------- */
+        //{
+        //  id: "buildings",
+        //  type: "fill",
+        //  source: "osm",
+        //  "source-layer": "buildings",
+        //  minzoom: 12,
+        //  paint: {
+        //    "fill-color": "#d1cfc9",
+        //    "fill-outline-color": "#b0aea8"
+        //  }
+        //},
+        {
+          "id": "buildings-3d",
+          "type": "fill-extrusion",
+          "source": "osm",
+          "source-layer": "buildings",
+          "minzoom": 13,
+          "paint": {
+            "fill-extrusion-color": "#d1cfc9",
+            "fill-extrusion-height": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13, ["coalesce", ["get", "height"], 10],
+              15, ["coalesce", ["get", "height"], 5]
+            ],
+            "fill-extrusion-base": [
+              "coalesce",
+              ["get", "min_height"],
+              0
+            ],
+            "fill-extrusion-opacity": 0.9
+          }
+        },
+
+        /* ---------- PLACE LABELS ---------- */
+        {
+          id: "places",
+          type: "symbol",
+          source: "osm",
+          "source-layer": "places",
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["Noto Sans Regular"],
+            "text-size": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              4, 10,
+              10, 10
+            ]
+          },
+          paint: {
+            "text-color": "#333333",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1
+          }
+        }
+      ]
+    },
+
+    center: [2.35, 48.85], // Paris
+    zoom: 5
+  });
+
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+  map.on("load", () => {
+    console.log("Carte PMTiles chargée");
+  });
+</script>
+
+</body>
+</html>

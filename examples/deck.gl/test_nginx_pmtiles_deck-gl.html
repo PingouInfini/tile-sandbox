@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>deck.gl – PMTiles Debug</title>
+  <style>
+    body { margin: 0; padding: 0; background: #111; }
+    #container { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+
+<div id="container"></div>
+
+<!-- ---- Deck.gl UMD ---- -->
+<script src="https://unpkg.com/deck.gl@8.9.28/dist.min.js"></script>
+<!-- ---- PMTiles UMD ---- -->
+<script src="https://unpkg.com/pmtiles@3.0.6/dist/index.js"></script>
+
+<script type="module">
+  import * as pmtiles from "https://unpkg.com/pmtiles@3.0.6/dist/index.js";
+
+  const PMTILES_URL = "http://192.168.10.3:8898/pmtiles/20260114.pmtiles";
+  const p = new pmtiles.PMTiles(PMTILES_URL);
+
+  // deck.gl UMD est global
+  const { Deck, MVTLayer } = deck;
+
+  p.getHeader().then(h => {
+    const centerLon = (h.minLon + h.maxLon)/2;
+    const centerLat = (h.minLat + h.maxLat)/2;
+
+    const pmtilesLayer = new MVTLayer({
+      id: 'pmtiles-vector',
+      data: "pmtiles://unused",
+      fetch: async (url, context) => {
+        if (!context?.index) return null;
+        const {x,y,z} = context.index;
+        const tile = await p.getZxy(z,x,y,context.signal).catch(()=>null);
+        return tile?.data ?? null;
+      },
+      getFillColor: [255,50,50,180],
+      getLineColor: [255,255,255],
+      getLineWidth: 1,
+      lineWidthUnits: 'pixels'
+    });
+
+    new Deck({
+      container: 'container',
+      initialViewState: { longitude: centerLon, latitude: centerLat, zoom: h.minZoom },
+      controller: true,
+      layers: [pmtilesLayer]
+    });
+  });
+</script>
+
+</body>
+</html>
