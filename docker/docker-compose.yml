@@ -6,7 +6,9 @@ services:
       - "8899:8000"
     volumes:
       # On monte le dossier contenant le fichier .mbtiles dans le dossier /tiles du conteneur
-      - /docker/appdata/mbtileserver/mbtiles:/tilesets:ro
+      - /docker/appdata/tileserver/mbtiles:/tilesets:ro
+    networks:
+      - tileserver
 
   fonts-server:
     image: nginx:latest
@@ -14,9 +16,12 @@ services:
     ports:
       - "8898:80"
     volumes:
-      - /docker/appdata/mbtileserver/fonts:/usr/share/nginx/html/fonts:ro
-      - /docker/appdata/mbtileserver/pmtiles:/usr/share/nginx/html/pmtiles:ro
-      - /docker/appdata/mbtileserver/nginx-map-assets.conf:/etc/nginx/conf.d/default.conf:ro
+      - /docker/appdata/tileserver/fonts:/usr/share/nginx/html/fonts:ro
+      - /docker/appdata/tileserver/pmtiles:/usr/share/nginx/html/pmtiles:ro
+      - /docker/appdata/tileserver/examples:/usr/share/nginx/html/examples:ro
+      - /docker/appdata/tileserver/nginx-map-assets.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - tileserver
 
   tileserver-gl:
     image: maptiler/tileserver-gl
@@ -25,5 +30,17 @@ services:
       - "8897:8080"
     volumes:
       # On monte le dossier contenant le .mbtiles
-      - /docker/appdata/mbtileserver/mbtiles:/data:ro
+      - /docker/appdata/tileserver/mbtiles:/data:ro
     command: maptiler-osm-2020-02-10-v3.11-planet.mbtiles
+    networks:
+      - tileserver
+
+networks:
+  tileserver:
+    name: tileserver
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.41.0.0/24
+          ip_range: 172.41.0.0/24
+          gateway: 172.41.0.1
