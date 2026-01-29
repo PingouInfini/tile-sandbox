@@ -9,7 +9,6 @@
   <script src="js/vendors/maplibre-3.6.2.js"></script>
 
   <!-- PMTiles -->
-   <script src="js/vendors/maplibre-3.6.2.js"></script>
   <script src="js/vendors/pmtiles-3.0.6.js"></script>
 
   <style>
@@ -29,6 +28,10 @@
   const PMTILES_URL =
     "pmtiles://http://192.168.10.3:8898/pmtiles/20260114.pmtiles";
 
+  const PMTILES_ELEVATION_URL =
+    "pmtiles://http://192.168.10.3:8898/pmtiles/corse_elevation.pmtiles";
+
+
   const map = new maplibregl.Map({
     container: "map",
 
@@ -43,9 +46,18 @@
           url: PMTILES_URL,
           minzoom: 0,
           maxzoom: 15
+        },
+        elevation: {
+          type: "raster-dem",
+          url: PMTILES_ELEVATION_URL,
+          minzoom: 10,
+          maxzoom: 15
         }
       },
-
+      terrain: {
+        source: "elevation",
+        exaggeration: 0.2
+      },
       layers: [
         /* ---------- BACKGROUND ---------- */
         {
@@ -73,7 +85,7 @@
           source: "osm",
           "source-layer": "landuse",
           paint: {
-            "fill-color": "#e8e6df"
+            "fill-color": "#15de4e"
           }
         },
 
@@ -106,6 +118,18 @@
             ]
           }
         },
+
+        {
+          id: "hillshade",
+          type: "hillshade",
+          source: "elevation",
+          paint: {
+            "hillshade-exaggeration": 0.6,
+            "hillshade-shadow-color": "#000000",
+            "hillshade-highlight-color": "#ffffff"
+          }
+        },
+
 
         /* ---------- ROADS ---------- */
         {

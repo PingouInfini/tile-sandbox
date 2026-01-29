@@ -19,6 +19,7 @@ mkdir -p /docker/appdata/tileserver/{fonts,mbtiles,pmtiles,examples}
 - Gestion des droits:
   - sudo chown -R <admin>:<admin> /docker/appdata/tileserver
   - sudo chown -R 101:101 /docker/appdata/tileserver/fonts
+  - sudo chown -R 101:101 /docker/appdata/tileserver/examples
   - sudo chmod -R 755 /docker/appdata/tileserver
 
 ----------------------------------------------------------------------------------------------------------------

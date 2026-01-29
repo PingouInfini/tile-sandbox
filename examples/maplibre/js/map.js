@@ -217,6 +217,10 @@ map.on("load", () => {
       const layer = map.getLayer(layerId);
 
       switch (layer.type) {
+        case 'background':
+          map.setPaintProperty(layerId, 'background-color', color);
+          break;
+
         case 'fill':
           map.setPaintProperty(layerId, 'fill-color', color);
           break;
