@@ -2,73 +2,33 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Test MBTiles Vector + Overlay Raster</title>
-
-  <!-- MapLibre -->
+  <title>MBTiles Explorer - OpenMapTiles</title>
+  <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/maplibre-gl-3.6.2.css" />
   <script src="js/vendors/maplibre-3.6.2.js"></script>
-
-  <!-- CSS local -->
-  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <div id="map"></div>
-
-
-
 <div id="layer-panel">
-  <strong>Layers</strong>
+  <h3>Calques</h3>
+  <button id="reset-config">Réinitialiser par défaut</button>
+  <div id="controls-container"></div>
+  <hr>
   <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="background" checked>
-      Background
-    </label>
-    <input type="color" data-layer-color="background" value="#ddeeff">
-  </div>
-
-  <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="water" checked>
-      Water
-    </label>
-    <input type="color" data-layer-color="water" value="#a0c8f0">
-  </div>
-
-  <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="waterway" checked>
-      Waterway
-    </label>
-    <input type="color" data-layer-color="waterway" value="#a0c8f0">
-  </div>
-
-  <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="roads" checked>
-      Roads
-    </label>
-    <input type="color" data-layer-color="roads" value="#ffffff">
-  </div>
-
-  <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="buildings-3d" checked>
-      Buildings 3D
-    </label>
-    <input type="color" data-layer-color="buildings-3d" value="#d1cfc9">
-  </div>
-
-  <div class="layer-control">
-    <label>
-      <input type="checkbox" data-layer="paris-sudouest-overlay" checked>
-      Paris Sud-Ouest (raster)
-    </label>
+    <label>Paris Sud-Ouest (Raster)</label>
+    <input type="checkbox" id="toggle-raster" checked>
   </div>
 </div>
 
-<!-- JS local -->
+<script src="js/config.js"></script>
+<script>
+  window.APP_STATE = {
+    mode: 'openmaptiles',
+    sourceUrl: MAP_CONFIG.urls.mbtiles_osm,
+    center: [2.35, 48.85], zoom: 4
+  };
+</script>
 <script src="js/map.js"></script>
-
 </body>
 </html>

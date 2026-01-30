@@ -1,242 +1,138 @@
+// Initialisation PMTiles
+if (typeof pmtiles !== 'undefined') {
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+}
+
+const SETTINGS = window.APP_STATE; // Défini dans le HTML
+const schema = MAP_CONFIG.schemas[SETTINGS.mode];
+
+function getSavedConfig() {
+    const saved = localStorage.getItem(schema.storageKey);
+    return saved ? JSON.parse(saved) : {};
+}
+
+function saveToStorage(layerId, property, value) {
+    const config = getSavedConfig();
+    if (!config[layerId]) config[layerId] = {};
+    config[layerId][property] = value;
+    localStorage.setItem(schema.storageKey, JSON.stringify(config));
+}
+
+const userConfig = getSavedConfig();
+
 const map = new maplibregl.Map({
-  container: 'map',
-  center: [2.0885, 48.7892], // centre approximatif Paris Sud-Ouest
-  zoom: 8,
-  style: {
-    "version": 8,
-    "glyphs": "http://192.168.10.3:8898/fonts/{fontstack}/{range}.pbf",
-    "sources": {
-      "osm": {
-        "type": "vector",
-        "tiles": [
-          "http://192.168.10.3:8899/services/maptiler-osm-2020-02-10-v3.11-planet/tiles/{z}/{x}/{y}.pbf"
-        ],
-        "minzoom": 0,
-        "maxzoom": 14
-      },
-      "paris_sudouest": {
-        "type": "raster",
-        "tiles": [
-          "http://192.168.10.3:8899/services/paris_sudouest/tiles/{z}/{x}/{y}.png"
-        ],
-        "tileSize": 256,
-        "minzoom": 12,
-        "maxzoom": 22,
-        "bounds": [
-          1.9027024815136719,
-          48.734721129364807,
-          2.2742903540188601,
-          48.8437560209994
-        ]
-      }
+    container: 'map',
+    center: SETTINGS.center,
+    zoom: SETTINGS.zoom,
+    style: {
+        version: 8,
+        glyphs: MAP_CONFIG.urls.fonts,
+        sources: {
+            osm: {
+                type: "vector",
+                [SETTINGS.mode === 'protomaps' ? 'url' : 'tiles']: SETTINGS.sourceUrl,
+                minzoom: 0,
+                maxzoom: 14
+            },
+            elevation: { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation, tileSize: 256 }
+        },
+        terrain: { source: "elevation", exaggeration: 0.1 },
+        layers: [{ id: "background", type: "background", paint: { "background-color": "#f2efe9" } }]
     },
-    "layers": [
-      {
-        "id": "background",
-        "type": "background",
-        "paint": {
-          "background-color": "#ddeeff"
-        }
-      },
-      {
-        "id": "land",
-        "type": "fill",
-        "source": "osm",
-        "source-layer": "land",
-        "paint": {
-          "fill-color": "#f2efe9"
-        }
-      },
-      {
-        "id": "water",
-        "type": "fill",
-        "source": "osm",
-        "source-layer": "water",
-        "paint": {
-          "fill-color": "#a0c8f0"
-        }
-      },
-      {
-        "id": "waterway",
-        "type": "line",
-        "source": "osm",
-        "source-layer": "waterway",
-        "paint": {
-          "line-color": "#a0c8f0",
-          "line-width": 1
-        }
-      },
-      {
-        "id": "roads",
-        "type": "line",
-        "source": "osm",
-        "source-layer": "transportation",
-        "paint": {
-          "line-color": "#ffffff",
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            5, 0.2,
-            12, 2
-          ]
-        }
-      },
-
-      /*
-      {
-        "id": "buildings",
-        "type": "fill",
-        "source": "osm",
-        "source-layer": "building",
-        "minzoom": 12,
-        "paint": {
-          "fill-color": "#d1cfc9",
-          "fill-outline-color": "#b0aea8"
-        }
-      },
-      */
-
-      {
-        "id": "buildings-3d",
-        "type": "fill-extrusion",
-        "source": "osm",
-        "source-layer": "building",
-        "minzoom": 13,
-        "filter": [
-          "all",
-          ["!=", ["get", "hide_3d"], true]
-        ],
-        "paint": {
-          "fill-extrusion-color": [
-            "coalesce",
-            ["get", "colour"],
-            "#d1cfc9"
-          ],
-          "fill-extrusion-height": [
-            "coalesce",
-            ["get", "render_height"],
-            10
-          ],
-          "fill-extrusion-base": [
-            "coalesce",
-            ["get", "render_min_height"],
-            0
-          ],
-          "fill-extrusion-opacity": 0.9
-        }
-      },
-      {
-        "id": "place-labels",
-        "type": "symbol",
-        "source": "osm",
-        "source-layer": "place",
-        "layout": {
-          "text-field": ["get", "name"],
-          "text-font": ["Noto Sans Regular"],
-          "text-size": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            4, 10,
-            10, 16
-          ]
-        },
-        "paint": {
-          "text-color": "#333333",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1
-        }
-      },
-      {
-        "id": "road-labels",
-        "type": "symbol",
-        "source": "osm",
-        "source-layer": "transportation_name",
-        "minzoom": 13,
-        "layout": {
-          "text-field": [
-            "coalesce",
-            ["get", "name"],
-            ["get", "ref"]
-          ],
-          "text-font": ["Noto Sans Regular"],
-          "text-size": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            13, 8,
-            16, 10
-          ],
-          "symbol-placement": "line",
-          "text-rotation-alignment": "map",
-          "text-pitch-alignment": "map",
-          "text-letter-spacing": 0.05
-        },
-        "paint": {
-          "text-color": "#333333",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1
-        }
-      },
-      {
-        "id": "paris-sudouest-overlay",
-        "type": "raster",
-        "source": "paris_sudouest",
-        "paint": {
-          "raster-opacity": 0.85,
-          "raster-fade-duration": 0
-        }
-      }
-    ]
-  }
+    maxZoom: 22
 });
 
-map.on("load", () => {
+map.on('load', () => {
+    const container = document.getElementById('controls-container');
 
-  // ON/OFF des layers
-  document.querySelectorAll('[data-layer]').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const layerId = e.target.dataset.layer;
-      const visible = e.target.checked ? 'visible' : 'none';
+    schema.layers.forEach(def => {
+        const isVisible = userConfig[def.id]?.visible ?? true;
+        const currentColor = userConfig[def.id]?.color ?? def.color;
 
-      if (map.getLayer(layerId)) {
-        map.setLayoutProperty(layerId, 'visibility', visible);
-      }
+        const layerDef = {
+            "id": def.id,
+            "source": "osm",
+            "source-layer": def.source,
+            "type": def.type,
+            "minzoom": def.minzoom || 0,
+            "layout": { "visibility": isVisible ? 'visible' : 'none' },
+            "paint": {}
+        };
+
+        // Gestion du FILTRE (Correction Eau PMTiles)
+        if (def.filter) layerDef.filter = def.filter;
+
+        // Application des styles selon type
+        if (def.type === 'fill') layerDef.paint["fill-color"] = currentColor;
+        else if (def.type === 'line') {
+            layerDef.paint["line-color"] = currentColor;
+            layerDef.paint["line-width"] = ["interpolate", ["linear"], ["zoom"], 5, 0.5, 15, 3];
+        }
+        else if (def.type === 'fill-extrusion') {
+            layerDef.paint = {
+                "fill-extrusion-color": currentColor,
+                "fill-extrusion-height": ["coalesce", ["get", def.hField], 5],
+                "fill-extrusion-base": ["coalesce", ["get", def.bField], 0],
+                "fill-extrusion-opacity": 0.8
+            };
+        }
+        else if (def.type === 'symbol') {
+          // Configuration de base du texte
+          layerDef.layout["text-font"] = ["Noto Sans Regular"];
+          
+          // Si c'est une étiquette de route (ergonomie avancée)
+          if (def.isRoadLabel) {
+              layerDef.layout["symbol-placement"] = "line";
+              layerDef.layout["text-field"] = ["coalesce", ["get", "name"], ["get", "ref"]];
+              layerDef.layout["text-rotation-alignment"] = "map";
+              layerDef.layout["text-pitch-alignment"] = "map";
+              layerDef.layout["text-letter-spacing"] = 0.05;
+              layerDef.layout["text-size"] = [
+                  "interpolate", ["linear"], ["zoom"],
+                  13, 8,
+                  16, 12
+              ];
+          } else {
+              // Étiquette standard (Villes, POI)
+              layerDef.layout["text-field"] = ["get", "name"];
+              layerDef.layout["text-size"] = 12;
+          }
+
+          layerDef.paint = {
+              "text-color": currentColor,
+              "text-halo-color": "#ffffff",
+              "text-halo-width": 1.5
+          };
+        }
+
+        map.addLayer(layerDef);
+
+        // --- UI ---
+        const div = document.createElement('div');
+        div.className = 'layer-control';
+        div.innerHTML = `
+            <input type="checkbox" ${isVisible ? 'checked' : ''}>
+            <label title="Zoom min: ${def.minzoom || 0}">${def.desc}</label>
+            <input type="color" value="${currentColor}">
+        `;
+
+        div.querySelector('input[type="checkbox"]').onchange = (e) => {
+            map.setLayoutProperty(def.id, 'visibility', e.target.checked ? 'visible' : 'none');
+            saveToStorage(def.id, 'visible', e.target.checked);
+        };
+
+        div.querySelector('input[type="color"]').oninput = (e) => {
+            const prop = (def.type === 'fill') ? 'fill-color' : (def.type === 'line') ? 'line-color' : (def.type === 'symbol') ? 'text-color' : 'fill-extrusion-color';
+            map.setPaintProperty(def.id, prop, e.target.value);
+            saveToStorage(def.id, 'color', e.target.value);
+        };
+
+        container.appendChild(div);
     });
-  });
 
-  // Couleurs dynamiques
-  document.querySelectorAll('[data-layer-color]').forEach(input => {
-    input.addEventListener('input', (e) => {
-      const layerId = e.target.dataset.layerColor;
-      const color = e.target.value;
-
-      if (!map.getLayer(layerId)) return;
-
-      const layer = map.getLayer(layerId);
-
-      switch (layer.type) {
-        case 'background':
-          map.setPaintProperty(layerId, 'background-color', color);
-          break;
-
-        case 'fill':
-          map.setPaintProperty(layerId, 'fill-color', color);
-          break;
-
-        case 'line':
-          map.setPaintProperty(layerId, 'line-color', color);
-          break;
-
-        case 'fill-extrusion':
-          map.setPaintProperty(layerId, 'fill-extrusion-color', color);
-          break;
-
-        default:
-          console.warn(`Couleur non supportée pour le layer ${layerId}`);
-      }
-    });
-  });
-
+    // Bouton Reset
+    document.getElementById('reset-config').onclick = () => {
+        if(confirm("Réinitialiser ?")) { localStorage.removeItem(schema.storageKey); location.reload(); }
+    };
 });
