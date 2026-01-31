@@ -22,6 +22,33 @@ function saveToStorage(layerId, property, value) {
 
 const userConfig = getSavedConfig();
 
+// --- PRÉPARATION DYNAMIQUE DES SOURCES ---
+const mapSources = {
+    osm: {
+        type: "vector",
+        [SETTINGS.mode === 'protomaps' ? 'url' : 'tiles']: SETTINGS.sourceUrl,
+        minzoom: 0, 
+        maxzoom: 14
+    }
+};
+
+// On n'ajoute le raster Paris que si on est en mode MBTiles
+if (SETTINGS.mode === 'openmaptiles') {
+    mapSources.paris_raster = { 
+        type: 'raster', 
+        tiles: MAP_CONFIG.urls.raster_paris, 
+        tileSize: 256 
+    };
+}
+
+// On n'ajoute les PMTiles (Elevation) que si on est en mode PMTiles
+if (SETTINGS.mode === 'protomaps') {
+    mapSources.terrain_corse = { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_corse, tileSize: 256 };
+    mapSources.terrain_alpes = { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_alpes, tileSize: 256 };
+    mapSources.hill_corse = { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_corse, tileSize: 256 };
+    mapSources.hill_alpes = { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_alpes, tileSize: 256 };
+}
+
 // --- INITIALISATION DE LA CARTE ---
 const map = new maplibregl.Map({
     container: 'map',
@@ -30,21 +57,7 @@ const map = new maplibregl.Map({
     style: {
         version: 8,
         glyphs: MAP_CONFIG.urls.fonts,
-        sources: {
-            osm: {
-                type: "vector",
-                [SETTINGS.mode === 'protomaps' ? 'url' : 'tiles']: SETTINGS.sourceUrl,
-                minzoom: 0,
-                maxzoom: 14
-            },
-            // Source Raster (uniquement pour MBTiles/Paris)
-            paris_raster: { type: 'raster', tiles: MAP_CONFIG.urls.raster_paris, tileSize: 256 },
-            // Sources Elevation (pour PMTiles)
-            terrain_corse: { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_corse, tileSize: 256 },
-            terrain_alpes: { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_alpes, tileSize: 256 },
-            hill_corse: { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_corse, tileSize: 256 },
-            hill_alpes: { type: "raster-dem", url: MAP_CONFIG.urls.pmtiles_elevation_alpes, tileSize: 256 }
-        },
+        sources: mapSources,
         // On n'active le terrain par défaut que si on est en mode PMTiles
         terrain: SETTINGS.mode === 'protomaps' ? { source: "terrain_corse", exaggeration: 0.1 } : undefined,
         layers: [

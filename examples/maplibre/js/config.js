@@ -3,7 +3,7 @@ const MAP_CONFIG = {
     urls: {
         fonts: "http://192.168.10.3:8898/fonts/{fontstack}/{range}.pbf",
         mbtiles_osm: ["http://192.168.10.3:8899/services/maptiler-osm-2020-02-10-v3.11-planet/tiles/{z}/{x}/{y}.pbf"],
-        pmtiles_osm: "pmtiles://http://192.168.10.3:8898/pmtiles/20260114.pmtiles",
+        pmtiles_osm: "pmtiles://http://192.168.10.3:8898/pmtiles/world.pmtiles",
         pmtiles_elevation_corse: "pmtiles://http://192.168.10.3:8898/pmtiles/corse_elevation.pmtiles",
         pmtiles_elevation_alpes: "pmtiles://http://192.168.10.3:8898/pmtiles/alpes_elevation.pmtiles",
         raster_paris: ["http://192.168.10.3:8899/services/paris_sudouest/tiles/{z}/{x}/{y}.png"]
