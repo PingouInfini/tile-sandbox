@@ -26,7 +26,46 @@ SELECT value FROM metadata WHERE name='json' OR name='vector_layers';
 .quit
 ```
 
+### QGIS -> Mbtiles
 
+Pour info: paris SO pour nv 0-18 = 12634 tuiles et ~30min
+> Traitement > Boite à outil > Outils raster > Générer MBTiles
+
+```
+Version de QGIS : 3.40.15-Bratislava
+Révision du code : f68f1bf573
+Version de Qt : 5.15.13
+Version de Python : 3.12.12
+Version de GDAL : 3.12.1
+Version de GEOS : 3.14.1-CAPI-1.20.5
+Version de Proj : Rel. 9.7.1, December 1st, 2025
+Version de PDAL : 2.9.0 (git-version: 69639b)
+Algorithme commencé à: 2026-01-31T23:15:51
+Démarrage de l'algorithme 'Générer des tuiles XYZ (MBTiles)'…
+Paramètres en entrée:
+{ 'ANTIALIAS' : True, 'BACKGROUND_COLOR' : QColor(0, 0, 0, 0), 'DPI' : 96, 'EXTENT' : '210773.741600000,254207.192400000,6167102.578400000,6246849.242100000 []', 'METATILESIZE' : 4, 'OUTPUT_FILE' : 'TEMPORARY_OUTPUT', 'QUALITY' : 75, 'TILE_FORMAT' : 0, 'ZOOM_MAX' : 18, 'ZOOM_MIN' : 0 }
+
+1 tuiles seront créées pour le niveau de zoom 0
+1 tuiles seront créées pour le niveau de zoom 1
+1 tuiles seront créées pour le niveau de zoom 2
+1 tuiles seront créées pour le niveau de zoom 3
+1 tuiles seront créées pour le niveau de zoom 4
+1 tuiles seront créées pour le niveau de zoom 5
+1 tuiles seront créées pour le niveau de zoom 6
+1 tuiles seront créées pour le niveau de zoom 7
+1 tuiles seront créées pour le niveau de zoom 8
+1 tuiles seront créées pour le niveau de zoom 9
+1 tuiles seront créées pour le niveau de zoom 10
+2 tuiles seront créées pour le niveau de zoom 11
+6 tuiles seront créées pour le niveau de zoom 12
+15 tuiles seront créées pour le niveau de zoom 13
+45 tuiles seront créées pour le niveau de zoom 14
+153 tuiles seront créées pour le niveau de zoom 15
+594 tuiles seront créées pour le niveau de zoom 16
+2376 tuiles seront créées pour le niveau de zoom 17
+9432 tuiles seront créées pour le niveau de zoom 18
+Un total de 12634 tuiles sera créé
+```
 
 
 ### Outil nécessaire : GDAL pour Windows

@@ -7,6 +7,24 @@ https://maps.protomaps.com/builds/
 > 20260114.pmtiles
 > 130Go
 
+```
+docker run --rm \
+  -v /volume1/Partage/workspace/dted_pmtiles:/data \
+  protomaps/go-pmtiles extract \
+  https://download.mapterhorn.com/planet.pmtiles \
+  /data/corse_elevation.pmtiles \
+  --bbox=8.53,41.33,9.56,43.05
+```
+
+> --bbox=minLon,minLat,maxLon,maxLat
+
+```
+docker run --rm \
+  -v /volume1/Partage/workspace/dted_pmtiles:/data \
+  protomaps/go-pmtiles extract \
+  https://download.mapterhorn.com/planet.pmtiles \
+  /data/france_elevation.pmtiles s \ --bbox=-5.5,41.0,10.0,51.5
+```
 
 ### Récupérer utilitaire pmtiles
 

@@ -4,7 +4,8 @@ const MAP_CONFIG = {
         fonts: "http://192.168.10.3:8898/fonts/{fontstack}/{range}.pbf",
         mbtiles_osm: ["http://192.168.10.3:8899/services/maptiler-osm-2020-02-10-v3.11-planet/tiles/{z}/{x}/{y}.pbf"],
         pmtiles_osm: "pmtiles://http://192.168.10.3:8898/pmtiles/20260114.pmtiles",
-        pmtiles_elevation: "pmtiles://http://192.168.10.3:8898/pmtiles/corse_elevation.pmtiles",
+        pmtiles_elevation_corse: "pmtiles://http://192.168.10.3:8898/pmtiles/corse_elevation.pmtiles",
+        pmtiles_elevation_alpes: "pmtiles://http://192.168.10.3:8898/pmtiles/alpes_elevation.pmtiles",
         raster_paris: ["http://192.168.10.3:8899/services/paris_sudouest/tiles/{z}/{x}/{y}.png"]
     },
 
@@ -13,6 +14,15 @@ const MAP_CONFIG = {
         // Configuration pour MBTiles (OpenMapTiles)
         openmaptiles: {
             storageKey: 'mbtiles_config_v1',
+            extraLayers: [
+                { 
+                    id: "paris-layer", 
+                    type: "raster", 
+                    source: "paris_raster", 
+                    minzoom: 0, 
+                    order: 1.5 // Entre fill (1) et line (2) [fill-extrusion (3), symbol (4)];
+                }
+            ],
             layers: [
                 { id: 'landcover', source: 'landcover', type: 'fill', color: '#add19e', desc: 'Végétation', minzoom: 10 },
                 { id: 'landuse', source: 'landuse', type: 'fill', color: '#e0dfdf', desc: 'Usage du sol', minzoom: 5 },
@@ -31,10 +41,26 @@ const MAP_CONFIG = {
         // Configuration pour PMTiles (Protomaps)
         protomaps: {
             storageKey: 'pmtiles_config_v1',
+            extraLayers: [
+                { 
+                    id: "hillshade-corse", 
+                    type: "hillshade", 
+                    source: "hill_corse", 
+                    order: 0.5, // Sous les polygones
+                    paint: { "hillshade-shadow-color": "#473b31", "hillshade-exaggeration": 0.5 } 
+                },
+                { 
+                    id: "hillshade-alpes", 
+                    type: "hillshade", 
+                    source: "hill_alpes", 
+                    order: 0.5,
+                    paint: { "hillshade-shadow-color": "#473b31", "hillshade-exaggeration": 0.5 } 
+                }
+            ],
             layers: [
                 { id: 'earth', source: 'earth', type: 'fill', color: '#f2efe9', desc: 'Terre (Base)', minzoom: 0 },
                 { id: 'landuse', source: 'landuse', type: 'fill', color: '#e8e6df', desc: 'Usage du sol', minzoom: 4 },
-                { id: 'landcover', source: 'landcover', type: 'fill', color: '#add19e', desc: 'Végétation', minzoom: 4 },
+                { id: 'landcover', source: 'landcover', type: 'fill', color: '#add19e', desc: 'Végétation', minzoom: 10 },
                 // Correction EAU PMTiles (Séparation via filtres)
                 { id: 'water-fill', source: 'water', type: 'fill', color: '#a0c8f0', desc: 'Eau (Surfaces)', filter: ["==", ["geometry-type"], "Polygon"] },
                 { id: 'water-line', source: 'water', type: 'line', color: '#a0c8f0', desc: 'Eau (Lignes)', filter: ["==", ["geometry-type"], "LineString"] },
