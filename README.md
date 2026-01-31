@@ -17,7 +17,7 @@ mkdir -p /docker/appdata/tileserver/{fonts,mbtiles,pmtiles,examples}
   - `tar -xzf fonts.tar.gz --strip-components=1 -C /docker/appdata/tileserver/fonts`
 - Copier le contenu de `examples` dans `/docker/appdata/tileserver/examples`  
 - Gestion des droits:
-  - sudo chown -R <admin>:<admin> /docker/appdata/tileserver
+  - sudo chown -R [admin]:[admin] /docker/appdata/tileserver
   - sudo chown -R 101:101 /docker/appdata/tileserver/fonts
   - sudo chown -R 101:101 /docker/appdata/tileserver/examples
   - sudo chmod -R 755 /docker/appdata/tileserver
