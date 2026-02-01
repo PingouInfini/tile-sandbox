@@ -1,0 +1,29 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "fonts": "fonts",
+      "styles": "styles",
+      "mbtiles": "mbtiles"
+    },
+    "formatQuality": {
+      "png": 90
+    }
+  },
+  "data": {
+    "v3": {
+      "mbtiles": "maptiler-osm-2020-02-10-v3.11-planet.mbtiles"
+    },
+    "paris": {
+      "mbtiles": "paris_sudouest.mbtiles"
+    }
+  },
+  "styles": {
+    "basic-preview": {
+      "style": "basic-preview/basic-preview.json",
+      "tilejson": {
+        "type": "vector"
+      }
+    }
+  }
+}

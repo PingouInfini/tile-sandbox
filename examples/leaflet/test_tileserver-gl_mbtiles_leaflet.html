@@ -24,6 +24,10 @@
             maxZoom: 18,
             attribution: 'Données locales : maptiler-osm'
         }).addTo(map);
+
+        var localParis = L.tileLayer('http://192.168.10.3:8897/data/paris/{z}/{x}/{y}.png', {
+            maxZoom: 18
+        }).addTo(map);
     </script>
 </body>
 </html>
