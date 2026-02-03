@@ -77,9 +77,14 @@ Un total de 12634 tuiles sera créé
    * `gdal`
    * `gdal-ecw` (important pour lire les ECW)
 4. Laisse l’installateur finir
-5. Ouvrir la console OSGeo4W
 
-6. Reprojection ECW → GeoTIFF WebMercator
+
+
+### Générer un mbtiles à partir d'un raster (ECW, GeoTIFF, JPEG2000)
+
+1. Ouvrir la console OSGeo4W
+
+2. Reprojection ECW → GeoTIFF WebMercator
 
 ⚠️ Le GeoTIFF sera gros (plusieurs dizaines de Go)
 
@@ -87,96 +92,29 @@ Un total de 12634 tuiles sera créé
 gdalwarp -t_srs EPSG:3857 -r bilinear -multi -wo NUM_THREADS=ALL_CPUS paris_sudouest.ecw paris_sudouest_3857.tif
 ```
 
-
-
-7. On crée le MBTiles au niveau de zoom maximal (ex: 18)
+3. On crée le MBTiles au niveau de zoom maximal (ex: 18)
    > Une astuce supplémentaire : Si vous trouvez que le fichier est trop lourd en PNG, vous pouvez ajouter -co QUALITY=75 -co TILE_FORMAT=JPEG dans le gdal_translate. Le JPEG est souvent 5 à 10 fois plus léger pour de l'imagerie aérienne.
 
 ```
 gdal_translate paris_sudouest_3857.tif paris_sudouest.mbtiles -of MBTILES -co TILE_FORMAT=PNG -co MINZOOM=0 -co MAXZOOM=18 -co ZOOM_LEVEL_STRATEGY=UPPER
 ```
 
-8. On génère TOUS les zooms inférieurs d'un coup (la pyramide)
+- crée un GeoTIFF tuilé : -co TILED=YES
+- compression sans perte, garde toute la qualité : -co COMPRESS=DEFLATE
+
+
+4. On génère TOUS les zooms inférieurs d'un coup (la pyramide)
 
 ```
 gdaladdo -r average paris_sudouest.mbtiles 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144
 ```
 
-9. Correction manuelle des métadonnées (si nécessaire)
+5. Correction manuelle des métadonnées (si nécessaire)
 Si après cela, un SELECT * FROM metadata affiche toujours minzoom | 9, c'est que GDAL refuse d'écrire "0" car il juge les tuiles trop vides. Vous pouvez le forcer très facilement puisque c'est du SQLite :
 
 ```
 sqlite3 paris_sudouest_final.mbtiles "UPDATE metadata SET value='0' WHERE name='minzoom';"
 ```
-
-
-
-
-
-
-
-
-
-7. Générer les overviews
-```
-gdaladdo -r average paris_sudouest_3857.tif 2 4 8 16 32
-```
-
-8. Génération du MBTiles
-```
-gdal_translate paris_sudouest_3857.tif paris_sudouest.mbtiles -of MBTILES -co TILE_FORMAT=PNG -co ZOOM_LEVEL_STRATEGY=LOWER -co MINZOOM=12 -co MAXZOOM=22 -co RESAMPLING=BILINEAR
-```
-
-**************
-* OLD 
-**************
-
-
-6. Commande de conversion directe
-
-```bat
-gdal_translate input.ecw output.mbtiles -of MBTILES -co TILE_FORMAT=JPEG -co QUALITY=85
-```
-
-* `-of MBTILES` : format de sortie
-* `TILE_FORMAT=JPEG` : plus léger (PNG si besoin de transparence)
-* `QUALITY=85` : bon compromis qualité/poids
-
-### Si nécessité d'avoir des niveaux de zoom précis
-
-```bat
-gdal_translate input.ecw temp.tif
-gdaladdo -r average temp.tif 2 4 8 16 32
-gdal_translate temp.tif output.mbtiles -of MBTILES
-```
-
-
-
-### Générer un mbtiles à partir d'un raster (ECW, GeoTIFF, JPEG2000)
-
-1) Convertir GeoTIFF en MBTiles
-```
-gdal_translate -of MBTILES -co TILE_FORMAT=PNG -co QUALITY=80 input.tif map.mbtiles
-```
-
-- Pour JPEG plutôt que PNG : -co TILE_FORMAT=JPEG
-- Pour compresser et réduire la taille : -co QUALITY=75
-
-2) Ajouter pyramides de zoom
-```
-gdaladdo -r average map.mbtiles 2 4 8 16 32
-```
-
-3) Ou pour conserver la qualité de base
-```
-gdal_translate -co TILED=YES -co COMPRESS=DEFLATE input.tif clean.tif
-gdaladdo -r average clean.tif 2 4 8 16 32
-gdal_translate -of MBTILES -co TILE_FORMAT=PNG clean.tif map.mbtiles
-gdaladdo -r average map.mbtiles 2 4 8 16 32
-```
-
-- crée un GeoTIFF tuilé : -co TILED=YES
-- compression sans perte, garde toute la qualité : -co COMPRESS=DEFLATE
 
 ### Générer un mbtiles à partir d'un vectoriel (shapefiles, GeoJSON, PostGIS)
 ```
