@@ -38,6 +38,32 @@ services:
     networks:
       - tileserver
 
+  graphhopper:
+    image: graphhopper/graphhopper:latest
+    container_name: graphhopper
+    ports:
+      - "8989:8989"
+    volumes:
+      - /docker/appdata/tileserver/graphhoper/data:/data
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms2g
+    command: ["/data/ile-de-france-latest.osm.pbf"]
+    networks:
+      - tileserver
+
+  photon:
+    image: rtuszik/photon-docker:latest
+    container_name: photon
+    ports:
+      - "2322:2322"
+    volumes:
+      - /docker/appdata/tileserver/photon/data:/data
+    environment:
+      - REGION=france
+      - MEMORY=8g
+    networks:
+      - tileserver
+
 networks:
   tileserver:
     name: tileserver
