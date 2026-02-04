@@ -10,15 +10,43 @@
 <body>
 
 <div id="map"></div>
-<div id="layer-panel">
-  <h3>Calques</h3>
-  <button id="reset-config">Réinitialiser par défaut</button>
-  <div id="controls-container"></div>
-  <hr>
-  <div class="layer-control">
-    <label>Paris Sud-Ouest (Raster)</label>
-    <input type="checkbox" id="toggle-raster" checked>
+<div id="ui-panel">
+  <div class="panel-section">
+    <h3>Recherche</h3>
+    <div class="search-container">
+      <input type="text" id="search-input" placeholder="Chercher un lieu..." autocomplete="off">
+      <div id="search-results" class="autocomplete-results"></div>
+    </div>
   </div>
+
+  <hr>
+
+  <div class="panel-section">
+    <h3>Itinéraire</h3>
+    <div id="route-inputs">
+      </div>
+    <div class="route-actions">
+      <button id="add-point-btn" class="small-btn">+ Ajouter étape</button>
+      <button id="calc-route-btn" class="primary-btn">Calculer</button>
+      <button id="clear-route-btn" class="secondary-btn">Effacer</button>
+    </div>
+    <div id="route-summary" class="route-summary"></div>
+    <div id="route-instructions" class="instructions-list"></div>
+  </div>
+
+  <hr>
+
+  <div class="panel-section">
+    <h3>Calques</h3>
+    <button id="reset-config">Réinitialiser par défaut</button>
+    <div id="controls-container"></div>
+    
+    <div class="layer-control" id="raster-control-box">
+       <label>Paris Sud-Ouest (Raster)</label>
+       <input type="checkbox" id="toggle-raster" checked>
+    </div>
+    
+    </div>
 </div>
 
 <script src="js/config.js"></script>
