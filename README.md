@@ -67,6 +67,13 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 - Exemples
   - Copier le contenu de `examples` dans `/docker/appdata/tileserver/examples/`  
+  - 🚧 Adapter les ip dans : 🚧
+    - maplibre/js/config.js
+    - leaflet/test_tileserver-gl_mbtiles_leaflet.html
+    ```
+    sudo find /docker/appdata/tileserver/examples/ -type f -exec sed -i 's/192.168.10.3/192.168.xx.yy/g' {} +
+    ```
+
 
 ---
 
@@ -107,7 +114,3 @@ et créer la stack décrite dans [docker/docker-compose.yml](./docker/docker-com
   - test_mbtileserver_mbtiles_maplibre.html
 - pmtiles
   - test_nginx_pmtiles_maplibre.html
-
-🚧 Adapter l'ip dans : 🚧
-- maplibre/js/config.js
-- leaflet/test_tileserver-gl_mbtiles_leaflet.html

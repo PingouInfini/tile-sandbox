@@ -46,7 +46,7 @@ services:
     volumes:
       - /docker/appdata/tileserver/graphhopper/data:/data
     environment:
-      - JAVA_OPTS=-Xmx8g -Xms4g
+      - JAVA_OPTS=-Xmx4g -Xms2g
     command: >
       --input /data/france-latest.osm.pbf
       --graph-cache /data/graph-cache
@@ -63,7 +63,7 @@ services:
     environment:
       - UPDATE_STRATEGY=DISABLED
       - REGION=france
-      - MEMORY=8g
+      - MEMORY=4g
     networks:
       - tileserver
 
