@@ -122,3 +122,42 @@ h3 { margin-top: 0; font-size: 1em; border-bottom: 1px solid #ccc; padding-botto
 }
 .instruction-step { padding: 8px 0; border-bottom: 1px solid #f9f9f9; display: flex; gap: 10px; }
 .instruction-icon { font-weight: bold; width: 20px; }
+
+/* --- Gestion du panneau rétractable --- */
+#ui-panel {
+    /* On ajoute une transition fluide pour le déplacement */
+    transition: transform 0.3s ease-in-out;
+    /* Pour que le bouton "débordant" soit visible */
+    overflow: visible;
+    background-color: #f2f2f2;
+}
+
+/* Classe utilitaire ajoutée via JS pour cacher le panneau */
+#ui-panel.collapsed {
+    transform: translateX(-350px); /* Largeur du panneau + marge */
+}
+
+/* Le bouton pour ouvrir/fermer */
+#panel-toggle-btn {
+    position: absolute;
+    top: 0;
+    right: -30px; /* On le colle à droite du panneau, à l'extérieur */
+    width: 30px;
+    height: 40px;
+    background: #f2f2f2;
+    border: 1px solid #ccc;
+    border-left: none; /* Pour fusionner visuellement */
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    font-weight: bold;
+    color: #555;
+    z-index: 1001;
+}
+
+#panel-toggle-btn:hover {
+    background-color: #f0f0f0;
+}

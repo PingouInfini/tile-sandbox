@@ -68,6 +68,12 @@ const map = new maplibregl.Map({
     maxZoom: 22
 });
 
+map.addControl(new maplibregl.NavigationControl({
+    showCompass: true, 
+    showZoom: true, 
+    visualizePitch: true 
+}), 'top-right');
+
 // ==============================
 // --- RECHERCHE & ITINÉRAIRE ---
 // ==============================
@@ -133,6 +139,7 @@ const PLACE_ICONS = {
 const searchInput = document.getElementById('search-input');
 const resultsContainer = document.getElementById('search-results');
 let debounceTimer;
+let currentSearchMarker = null; // Variable pour stocker le marqueur unique
 
 // Fonction pour nettoyer les résultats
 function clearResults() {
@@ -142,34 +149,31 @@ function clearResults() {
 
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-        // On annule le précédent timer si l'utilisateur tape vite
         clearTimeout(debounceTimer);
-        
         const query = e.target.value.trim();
-
-        // Règle : Pas de recherche en dessous de 3 caractères
         if (query.length < 3) {
             clearResults();
             return;
         }
-
-        // On lance la recherche après 300ms de pause (Debounce)
         debounceTimer = setTimeout(() => {
             searchPhoton(query);
         }, 300);
     });
     
-    // Fermer si on clique dans le champ mais qu'il est vide
+    // --- MODIFICATION : Réafficher les résultats au clic (Focus) ---
     searchInput.addEventListener('focus', () => {
-        if (searchInput.value.length >= 3 && resultsContainer.children.length > 0) {
-            resultsContainer.style.display = 'block';
+        const query = searchInput.value.trim();
+        // Si on a déjà du texte (>3 chars) et pas de résultats affichés, on relance la recherche
+        // ou on réaffiche si on avait gardé le cache (ici on relance simple pour être à jour)
+        if (query.length >= 3 && resultsContainer.children.length === 0) {
+            searchPhoton(query);
+        } else if (query.length >= 3 && resultsContainer.children.length > 0) {
+             resultsContainer.style.display = 'block';
         }
     });
 }
 
 function searchPhoton(query) {
-    // Construction de l'URL
-    // Note : On encode la query pour gérer les espaces et caractères spéciaux
     const url = `${MAP_CONFIG.urls.photon_api}?q=${encodeURIComponent(query)}&limit=10&lang=fr`;
 
     fetch(url)
@@ -178,62 +182,57 @@ function searchPhoton(query) {
             return response.json();
         })
         .then(data => {
-            resultsContainer.innerHTML = ''; // On vide les anciens résultats
+            resultsContainer.innerHTML = ''; 
 
             if (data.features && data.features.length > 0) {
-                // On affiche le conteneur
                 resultsContainer.style.display = 'block';
 
                 data.features.forEach(feature => {
                     const props = feature.properties;
-                    
-                    // 1. Déterminer l'icône
-                    // On regarde la valeur OSM (ex: station) ou le type général (ex: city)
                     const typeKey = props.osm_value || props.type;
                     const icon = PLACE_ICONS[typeKey] || PLACE_ICONS["default"];
-
-                    // 2. Créer l'élément visuel
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'autocomplete-item';
-                    itemDiv.style.display = 'flex';
-                    itemDiv.style.alignItems = 'center';
-                    itemDiv.style.gap = '10px';
-
-                    // 3. Construire le label avec l'icône et le contexte
+                    
+                    // ... (Code HTML de l'item identique à avant) ...
+                    // Je remets juste le bloc simplifié pour la lisibilité
                     const name = props.name || "Inconnu";
                     const context = [props.city, props.postcode, props.county].filter(Boolean).join(', ');
-
+                    
                     itemDiv.innerHTML = `
-                        <span style="font-size: 1.2em;">${icon}</span>
-                        <div style="display: flex; flex-direction: column;">
-                            <span style="font-weight: bold; color: #333;">${name}</span>
-                            <span style="font-size: 0.85em; color: #666;">${context}</span>
+                         <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size: 1.2em;">${icon}</span>
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-weight: bold; color: #333;">${name}</span>
+                                <span style="font-size: 0.85em; color: #666;">${context}</span>
+                            </div>
                         </div>
                     `;
                     
-                    // Gestion du clic sur un résultat
+                    // --- MODIFICATION : Gestion du Clic sur résultat ---
                     itemDiv.onclick = () => {
-                        const coords = feature.geometry.coordinates; // [Lon, Lat] pour GeoJSON
+                        const coords = feature.geometry.coordinates; 
                         
-                        // 1. Zoom et centrage
+                        // 1. Zoom (identique)
                         if (feature.properties.extent) {
                             const ext = feature.properties.extent;
-                            // Photon renvoie [minLon, maxLat, maxLon, minLat]
                             map.fitBounds([[ext[0], ext[3]], [ext[2], ext[1]]], { padding: 50 });
                         } else {
-                            map.flyTo({
-                                center: coords,
-                                zoom: 14,
-                                essential: true // Force l'animation
-                            });
+                            map.flyTo({ center: coords, zoom: 14, essential: true });
                         }
 
-                        // 2. Marqueur temporaire
-                        new maplibregl.Marker({ color: "#FF0000" })
+                        // 2. --- MODIFICATION : Gestion du Marqueur Unique ---
+                        // Si un marqueur existe déjà, on le supprime
+                        if (currentSearchMarker) {
+                            currentSearchMarker.remove();
+                        }
+                        
+                        // On crée le nouveau et on le stocke dans la variable
+                        currentSearchMarker = new maplibregl.Marker({ color: "#FF0000" })
                             .setLngLat(coords)
                             .addTo(map);
 
-                        // 3. Mise à jour du champ texte et fermeture liste
+                        // 3. Update UI
                         searchInput.value = props.name;
                         clearResults();
                     };
@@ -241,14 +240,10 @@ function searchPhoton(query) {
                     resultsContainer.appendChild(itemDiv);
                 });
             } else {
-                // Pas de résultats
                 clearResults();
             }
         })
-        .catch(err => {
-            console.error("Erreur Photon :", err);
-            // Optionnel : Afficher "Erreur" dans la liste
-        });
+        .catch(err => console.error("Erreur Photon :", err));
 }
 
 // Clic ailleurs ferme la liste
@@ -566,13 +561,35 @@ map.on('load', () => {
             }
             else if (def.type === 'symbol') {
                 layerDef.layout["text-font"] = ["Noto Sans Regular"];
-                layerDef.layout["text-field"] = def.isRoadLabel ? ["coalesce", ["get", "name"], ["get", "ref"]] : ["get", "name"];
-                layerDef.layout["text-size"] = def.isRoadLabel ? ["interpolate", ["linear"], ["zoom"], 13, 8, 16, 12] : 12;
+                
+                // --- LOGIQUE DE TRADUCTION ---
+                // On cherche d'abord 'name:fr', puis 'name' par défaut.
+                // Pour les routes (isRoadLabel), on ajoute 'ref' (ex: D14) en dernier recours.
                 if (def.isRoadLabel) {
+                    layerDef.layout["text-field"] = [
+                        "coalesce", 
+                        ["get", "name:fr"], 
+                        ["get", "name"], 
+                        ["get", "ref"]
+                    ];
                     layerDef.layout["symbol-placement"] = "line";
                     layerDef.layout["text-rotation-alignment"] = "map";
+                    layerDef.layout["text-size"] = ["interpolate", ["linear"], ["zoom"], 13, 8, 16, 12];
+                } else {
+                    layerDef.layout["text-field"] = [
+                        "coalesce", 
+                        ["get", "name:fr"], 
+                        ["get", "name"]
+                    ];
+                    layerDef.layout["text-size"] = 12;
                 }
-                layerDef.paint = { "text-color": currentColor, "text-halo-color": "#ffffff", "text-halo-width": 1.5 };
+                // ----------------------------
+
+                layerDef.paint = { 
+                    "text-color": currentColor, 
+                    "text-halo-color": "#ffffff", 
+                    "text-halo-width": 1.5 
+                };
             }
 
             // Création de l'UI uniquement pour les couches standards
@@ -648,3 +665,19 @@ map.on('moveend', () => {
         map.setTerrain({ source: targetSource, exaggeration: 0.1 });
     }
 });
+
+// --- GESTION DU TOGGLE PANNEAU LATÉRAL ---
+const panel = document.getElementById('ui-panel');
+const toggleBtn = document.getElementById('panel-toggle-btn');
+
+if (toggleBtn && panel) {
+    toggleBtn.onclick = () => {
+        panel.classList.toggle('collapsed');
+        // On change la flèche selon l'état
+        if (panel.classList.contains('collapsed')) {
+            toggleBtn.innerText = '▶'; // Flèche vers la droite quand fermé
+        } else {
+            toggleBtn.innerText = '◀'; // Flèche vers la gauche quand ouvert
+        }
+    };
+}
