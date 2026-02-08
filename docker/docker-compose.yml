@@ -37,7 +37,7 @@ services:
     command: -c /data/config.json
     networks:
       - tileserver
-
+      
   graphhopper:
     image: israelhikingmap/graphhopper:latest
     container_name: graphhopper
@@ -64,6 +64,40 @@ services:
       - UPDATE_STRATEGY=DISABLED
       - REGION=france
       - MEMORY=4g
+    networks:
+      - tileserver
+
+  # -------------------------------------------------------
+  # OVERPASS API - Le moteur de base de données
+  # -------------------------------------------------------
+  overpass-api:
+    image: wiktorn/overpass-api:latest
+    container_name: overpass-api
+    ports:
+      - "8894:80"
+    volumes:
+      - /docker/appdata/tileserver/overpass/db:/db
+      - /docker/appdata/tileserver/overpass/data/monaco-260206.osm.bz2:/monaco.osm.bz2:ro
+    environment:
+      - OVERPASS_MODE=init
+      - OVERPASS_META=no
+      - OVERPASS_PLANET_URL=file:///monaco.osm.bz2
+      - OVERPASS_RULES_LOAD=10
+      - OVERPASS_STOP_AFTER_INIT=false
+    networks:
+      - tileserver
+
+
+ # -------------------------------------------------------
+  # OVERPASS TURBO - L'interface Web
+  # -------------------------------------------------------
+  overpass-turbo-ui:
+    image: nginx:alpine
+    container_name: overpass-turbo-ui
+    ports:
+      - "8892:80"
+    volumes:
+      - /docker/appdata/tileserver/overpass-turbo/html/dist:/usr/share/nginx/html:ro
     networks:
       - tileserver
 
