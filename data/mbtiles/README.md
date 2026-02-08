@@ -10,13 +10,13 @@ https://filigran-marketplace-assets.s3.eu-west-3.amazonaws.com/maptiler-osm-2020
 
 ### Visualiser les datas (infos générales et liste des layers vectoriels)
 
-```
+```bash
 sqlite3 mon_fichier.mbtiles
 
 sqlite>
 ```
 
-```
+```sql
 SELECT * FROM metadata;
 
 SELECT value FROM metadata WHERE name='json' OR name='vector_layers';
@@ -88,14 +88,14 @@ Un total de 12634 tuiles sera créé
 
 ⚠️ Le GeoTIFF sera gros (plusieurs dizaines de Go)
 
-```
+```bash
 gdalwarp -t_srs EPSG:3857 -r bilinear -multi -wo NUM_THREADS=ALL_CPUS paris_sudouest.ecw paris_sudouest_3857.tif
 ```
 
 3. On crée le MBTiles au niveau de zoom maximal (ex: 18)
    > Une astuce supplémentaire : Si vous trouvez que le fichier est trop lourd en PNG, vous pouvez ajouter -co QUALITY=75 -co TILE_FORMAT=JPEG dans le gdal_translate. Le JPEG est souvent 5 à 10 fois plus léger pour de l'imagerie aérienne.
 
-```
+```bash
 gdal_translate paris_sudouest_3857.tif paris_sudouest.mbtiles -of MBTILES -co TILE_FORMAT=PNG -co MINZOOM=0 -co MAXZOOM=18 -co ZOOM_LEVEL_STRATEGY=UPPER
 ```
 
@@ -105,19 +105,19 @@ gdal_translate paris_sudouest_3857.tif paris_sudouest.mbtiles -of MBTILES -co TI
 
 4. On génère TOUS les zooms inférieurs d'un coup (la pyramide)
 
-```
+```bash
 gdaladdo -r average paris_sudouest.mbtiles 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144
 ```
 
 5. Correction manuelle des métadonnées (si nécessaire)
 Si après cela, un SELECT * FROM metadata affiche toujours minzoom | 9, c'est que GDAL refuse d'écrire "0" car il juge les tuiles trop vides. Vous pouvez le forcer très facilement puisque c'est du SQLite :
 
-```
+```bash
 sqlite3 paris_sudouest_final.mbtiles "UPDATE metadata SET value='0' WHERE name='minzoom';"
 ```
 
 ### Générer un mbtiles à partir d'un vectoriel (shapefiles, GeoJSON, PostGIS)
-```
+```bash
 ogr2ogr -f GeoJSON -t_srs EPSG:3857 output.geojson input.shp
 tippecanoe -o map.mbtiles -zg --drop-densest-as-needed output.geojson
 ```

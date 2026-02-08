@@ -4,7 +4,7 @@
 
 Créer les path sur le host
 
-```
+```bash
 mkdir -p /docker/appdata/tileserver/{fonts,mbtiles,pmtiles,examples,nginx,tileserver-gl}
 mkdir -p /docker/appdata/tileserver/graphhopper/data
 mkdir -p /docker/appdata/tileserver/photon/data
@@ -59,7 +59,7 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 - FONT
   - Copier l'archive `fonts.tar.gz` sur le disque et l'extraire dans `/docker/appdata/tileserver/fonts/` avec la commande:
-    ```
+    ```bash
     tar -xzf fonts.tar.gz --strip-components=1 -C /docker/appdata/tileserver/fonts
     ```
 
@@ -67,64 +67,76 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 - Overpass
   - Moteur de base de données
+    - ```bash
+      mkdir -p /docker/appdata/tileserver/overpass/{db,data}
+      ```
     - Récupérer un dataset au format osm.bz2
     -  > cf [data/overpass/README.md](./data/overpass/README.md) pour les actions
 
-  - Interface web
-    ```
-    mkdir -p /docker/appdata/tileserver/overpass-turbo/html
+  - Interface web  
 
-    # Construire l'application via un conteneur temporaire
-    docker run --rm -it \
-      -v /docker/appdata/tileserver/overpass-turbo/html:/app \
-      node:22-alpine sh -c "apk add --no-cache git && \
-      git config --global --add safe.directory /app && \
-      git clone --depth 1 https://github.com/tyrasd/overpass-turbo.git /app && \
-      cd /app && \
-      npm install && \
-      npm run build"
+    - Structure de dossier et comilation
+      ```bash
+      mkdir -p /docker/appdata/tileserver/overpass-turbo/html
 
-    mkdir -p /docker/appdata/tileserver/overpass-turbo/html/dist/vendor/leaflet
-    cd /docker/appdata/tileserver/overpass-turbo/html/dist/vendor/leaflet
+      # Construire l'application via un conteneur temporaire
+      docker run --rm -it \
+        -v /docker/appdata/tileserver/overpass-turbo/html:/app \
+        node:22-alpine sh -c "apk add --no-cache git && \
+        git config --global --add safe.directory /app && \
+        git clone --depth 1 https://github.com/tyrasd/overpass-turbo.git /app && \
+        cd /app && \
+        npm install && \
+        npm run build"
+      ```
 
-    wget https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
-    wget https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
-    mkdir images
-    cd images
+    - Récupération de Leaflet
+      ```bash
+      sudo ls >/dev/null 2>&1
 
-    wget https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png
-    wget https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png
-    wget https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png
+      BASE_DIR="/docker/appdata/tileserver/overpass-turbo/html/dist/vendor/leaflet"
 
-    nano /docker/appdata/tileserver/overpass-turbo/html/dist/index.html
-    ```
+      sudo mkdir -p "$BASE_DIR/images"
 
-    > ⚠️ Gérer les droits chown/chmod
+      # Fichiers principaux Leaflet
+      sudo wget -P "$BASE_DIR" https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
+      sudo wget -P "$BASE_DIR" https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
 
+      # Images
+      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png
+      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png
+      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png
+      ```
 
-    > ⚠️ Dans le <head> AVANT les scripts de l’app, ajouter :
+    - Adaptation du html pour intégrer Leaflet
+      ```bash
+      sudo nano /docker/appdata/tileserver/overpass-turbo/html/dist/index.html
+      ```
 
-    ```
-    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-    <script src="/vendor/leaflet/leaflet.js"></script>
-    ```
+      > ⚠️ Dans le <head> AVANT les scripts de l’app, ajouter :
 
-    ```
-    # Créer le fichier config.js
-    nano /docker/appdata/tileserver/overpass-turbo/html/dist/config.js
-    ```
+      ```
+      <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+      <script src="/vendor/leaflet/leaflet.js"></script>
+      ```
 
-    ``` 
-    var settings = {
-      overpass_server: "http://192.168.10.3:8894/api/",
-      share_link: false,
-      tileServer: "http://192.168.10.3:8897/styles/basic-preview/{z}/{x}/{y}.png",
-      useLeaflet: true,
-      coords_lat: 46.2276,
-      coords_lon: 2.2137,
-      zoom: 6
-    };
-    ```
+    - Créer le fichier config.js (⚠️adapter l'ip) **🚧 FIXME**
+      ```bash
+      # Créer le fichier config.js
+      nano /docker/appdata/tileserver/overpass-turbo/html/dist/config.js
+      ```
+
+      ```bash
+      var settings = {
+        overpass_server: "http://192.168.10.3:8894/api/",
+        share_link: false,
+        tileServer: "http://192.168.10.3:8897/styles/basic-preview/{z}/{x}/{y}.png",
+        useLeaflet: true,
+        coords_lat: 46.2276,
+        coords_lon: 2.2137,
+        zoom: 6
+      };
+      ```
 
 ---
 
@@ -138,7 +150,7 @@ mkdir -p /docker/appdata/tileserver/photon/data
   - 🚧 Adapter les ip dans : 🚧
     - maplibre/js/config.js
     - leaflet/test_tileserver-gl_mbtiles_leaflet.html
-    ```
+    ```bash
     sudo find /docker/appdata/tileserver/examples/ -type f -exec sed -i 's/192.168.10.3/192.168.xx.yy/g' {} +
     ```
 
@@ -146,10 +158,12 @@ mkdir -p /docker/appdata/tileserver/photon/data
 ---
 
 - Gestion des droits:
-  - sudo chown -R [admin]:[admin] /docker/appdata/tileserver
-  - sudo chown -R 101:101 /docker/appdata/tileserver/fonts
-  - sudo chown -R 101:101 /docker/appdata/tileserver/examples
-  - sudo chmod -R 755 /docker/appdata/tileserver
+  ```bash
+  sudo chown -R administrateur:administrateur /docker/appdata/tileserver
+  sudo chown -R 101:101 /docker/appdata/tileserver/fonts
+  sudo chown -R 101:101 /docker/appdata/tileserver/examples
+  sudo chmod -R 755 /docker/appdata/tileserver
+  ```
 
 ----------------------------------------------------------------------------------------------------------------
 

@@ -8,7 +8,7 @@ Depuis `https://download.geofabrik.de/`
 
     > A stocker dans `/docker/appdata/tileserver/graphhopper/data`
 
-    ```
+    ```bash
     wget https://download.geofabrik.de/europe/france-latest.osm.pbf \
     -O /docker/appdata/tileserver/graphhopper/data/france-latest.osm.pbf
     ```

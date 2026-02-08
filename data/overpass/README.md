@@ -10,7 +10,7 @@ cf [../graphhopper/README.md](../graphhopper/README.md) pour la récupération d
 
 > [osmium-cat](https://docs.osmcode.org/osmium/latest/osmium-cat.html)
 
-```
+```bash
 docker run --rm -v /docker/appdata/tileserver/graphhopper/data:/data iboates/osmium:latest cat -o /data/france-latest.osm.bz2 /data/france-latest.osm.pbf
 ```
 
