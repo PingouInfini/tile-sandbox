@@ -67,6 +67,18 @@ services:
     networks:
       - tileserver
 
+  nominatim:
+    image: mediagis/nominatim:5.2.0
+    container_name: nominatim
+    ports:
+      - "8891:8080"
+    volumes:
+      - /docker/appdata/tileserver/graphhopper/data/france-latest.osm.pbf:/data/france.osm.pbf:ro
+    environment:
+      - PBF_URL=file:///data/france.osm.pbf
+    networks:
+      - tileserver
+
   # -------------------------------------------------------
   # OVERPASS API - Le moteur de base de données
   # -------------------------------------------------------
