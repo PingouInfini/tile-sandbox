@@ -23,11 +23,21 @@
   </div>
 
   <hr>
+  
+  <div class="panel-section">
+      <h3>Analyse de visibilité (360°)</h3>
+      <label>Rayon (mètres) : <span id="radius-val">500</span>m</label>
+      <input type="range" id="range-radius" min="100" max="2000" step="100" value="500">
+      <br><br>
+      <button id="btn-viewshed" class="primary-btn">🔭 Calculer Viewshed</button>
+      <div id="los-result" style="margin-top:10px; font-size: 0.9em;"></div>
+  </div>
+
+  <hr>
 
   <div class="panel-section">
     <h3>Itinéraire</h3>
-    <div id="route-inputs">
-      </div>
+    <div id="route-inputs"></div>
     <div class="route-actions">
       <button id="add-point-btn" class="small-btn">+ Ajouter étape</button>
       <button id="calc-route-btn" class="primary-btn">Calculer</button>
@@ -49,7 +59,7 @@
        <input type="checkbox" id="toggle-hillshade" checked>
     </div>
     
-    </div>
+  </div>
 </div>
 
 <script src="js/config.js"></script>
@@ -60,6 +70,6 @@
     center: [9.1, 42.1], zoom: 9
   };
 </script>
-<script src="js/map.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
