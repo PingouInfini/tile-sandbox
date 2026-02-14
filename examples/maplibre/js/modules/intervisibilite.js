@@ -10,8 +10,8 @@ export class ViewshedTool {
         // --- CONFIGURATION ---
         this.radius = 500; 
         this.observerHeight = 1.7; // Hauteur des yeux (homme moyen)
-        this.targetHeight = 0;     // On regarde le sol (0m). Mettre 1m pour voir des objets.
-        this.numRays = 240;        // 240 rayons = bonne précision (1.5°) sans lag
+        this.targetHeight = 1;     // On regarde le sol (0m). Mettre 1m pour voir des objets.
+        this.numRays = 240;        // nb rayons => précision de 360°/numRays (en degré)
         
         // Calques à considérer comme obstacles (Bâtiments)
         this.buildingLayers = ['building', 'buildings-3d'];

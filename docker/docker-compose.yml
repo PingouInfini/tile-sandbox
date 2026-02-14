@@ -37,7 +37,7 @@ services:
     command: -c /data/config.json
     networks:
       - tileserver
-      
+
   graphhopper:
     image: israelhikingmap/graphhopper:latest
     container_name: graphhopper
@@ -72,7 +72,9 @@ services:
     container_name: nominatim
     ports:
       - "8891:8080"
+    shm_size: 1gb
     volumes:
+      - /docker/appdata/tileserver/nominatim/db:/var/lib/postgresql/16/main
       - /docker/appdata/tileserver/graphhopper/data/france-latest.osm.pbf:/data/france.osm.pbf:ro
     environment:
       - PBF_URL=file:///data/france.osm.pbf
@@ -89,11 +91,11 @@ services:
       - "8894:80"
     volumes:
       - /docker/appdata/tileserver/overpass/db:/db
-      - /docker/appdata/tileserver/overpass/data/monaco-260206.osm.bz2:/monaco.osm.bz2:ro
+      - /docker/appdata/tileserver/overpass/data/france-latest.osm.bz2:/france.osm.bz2:ro
     environment:
       - OVERPASS_MODE=init
       - OVERPASS_META=no
-      - OVERPASS_PLANET_URL=file:///monaco.osm.bz2
+      - OVERPASS_PLANET_URL=file:///france.osm.bz2
       - OVERPASS_RULES_LOAD=10
       - OVERPASS_STOP_AFTER_INIT=false
     networks:

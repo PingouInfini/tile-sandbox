@@ -1,25 +1,17 @@
 # Tile-sandbox
 
-### Prérequis
+## Données
 
-Créer les path sur le host
-
-```bash
-mkdir -p /docker/appdata/tileserver/{fonts,mbtiles,pmtiles,examples,nginx,tileserver-gl}
-mkdir -p /docker/appdata/tileserver/graphhopper/data
-mkdir -p /docker/appdata/tileserver/photon/data
-```
-
-----------------------------------------------------------------------------------------------------------------
-
-### Données
-
-- Docker
+### Docker
   - Copier les images docker (fichiers .tar) quelque part sur le disque
 
 ---
 
-- MBTiles
+### MBTiles
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/mbtiles
+    ```
   - Copier le fichier `maptiler-osm-2020-02-10-v3.11-planet.mbtiles` dans `/docker/appdata/tileserver/mbtiles/` *(issu de https://filigran-marketplace-assets.s3.eu-west-3.amazonaws.com/maptiler-osm-2020-02-10-v3.11-planet.mbtiles)*
   - Copier le fichier `paris_sudouest.mbtiles` dans `/docker/appdata/tileserver/mbtiles/` *(construit à partir de paris_sudouest.ecw)*
     
@@ -27,7 +19,11 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 ---
 
-- PMTiles
+### PMTiles
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/pmtiles
+    ```
   - Copier le fichier `20260114.pmtiles` dans `/docker/appdata/tileserver/pmtiles/` *(issu de https://maps.protomaps.com/builds/)*
     > renommer `AAAAMMJJ.pmtiles` en `world.pmtiles`
   - Copier le fichier `alpes_elevation.pmtiles` dans `/docker/appdata/tileserver/pmtiles/` *(extrait de https://download.mapterhorn.com/planet.pmtiles)*
@@ -37,27 +33,56 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 ---
 
-- Tileserver-gl
+### Tileserver-gl
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/tileserver-gl
+    ```
   - Copier le contenu de `assets/tileserver-gl` dans `/docker/appdata/tileserver/tileserver-gl/`
 
 ---
 
-- NGINX *(nginx-map-assets)*
+### NGINX *(nginx-map-assets)*
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/nginx
+    ```
   - Copier le contenu de `assets/nginx` dans `/docker/appdata/tileserver/nginx/` 
 
 ---
 
-- Graphhopper
+### Graphhopper
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/graphhopper/data
+    ```
   - Copier le fichier `france-latest.osm.pbf` dans `/docker/appdata/tileserver/graphhopper/data/` *(issu de https://download.geofabrik.de/)*
 
 ---
 
-- Photon
+### Photon
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/photon/data
+    ```
   - Copier le répertoire `data` dans `/docker/appdata/tileserver/photon/` *(issu d'une instance photon-docker online)*
 
 ---
 
-- FONT
+### Nominatim
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/nominatim/db
+    ```
+  - Utilisation du dataset de Graphhopper
+
+---
+
+### FONTS
+  - Créer le path sur le host : 
+    ```bash
+    mkdir -p /docker/appdata/tileserver/fonts
+    ```
   - Copier l'archive `fonts.tar.gz` sur le disque et l'extraire dans `/docker/appdata/tileserver/fonts/` avec la commande:
     ```bash
     tar -xzf fonts.tar.gz --strip-components=1 -C /docker/appdata/tileserver/fonts
@@ -65,7 +90,7 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 ---
 
-- Overpass
+### Overpass
   - Moteur de base de données
     - ```bash
       mkdir -p /docker/appdata/tileserver/overpass/{db,data}
@@ -88,6 +113,11 @@ mkdir -p /docker/appdata/tileserver/photon/data
         cd /app && \
         npm install && \
         npm run build"
+      ```
+
+    - Modifier les sources compiler pour s'appuyer sur le Nominatim déployé en local (⚠️adapter l'ip)
+      ```bash
+      sudo find /docker/appdata/tileserver/overpass-turbo/html/dist -type f -exec sed -i 's|https://nominatim.openstreetmap.org|http://192.168.10.3:8891|g' {} +
       ```
 
     - Récupération de Leaflet
@@ -113,7 +143,7 @@ mkdir -p /docker/appdata/tileserver/photon/data
       sudo nano /docker/appdata/tileserver/overpass-turbo/html/dist/index.html
       ```
 
-      > ⚠️ Dans le <head> AVANT les scripts de l’app, ajouter :
+      > ⚠️ Dans le \<head\> AVANT les scripts de l’app, ajouter :
 
       ```
       <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
@@ -140,12 +170,8 @@ mkdir -p /docker/appdata/tileserver/photon/data
 
 ---
 
-- Photon
-  - Copier le répertoire `data` dans `/docker/appdata/tileserver/photon/` *(issu d'une instance photon-docker online)*
-
----
-
 - Exemples
+  - Créer le path sur le host : `mkdir -p /docker/appdata/tileserver/examples`
   - Copier le contenu de `examples` dans `/docker/appdata/tileserver/examples/`  
   - 🚧 Adapter les ip dans : 🚧
     - maplibre/js/config.js
