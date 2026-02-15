@@ -4,17 +4,20 @@ export class ViewshedTool {
     constructor(map) {
         this.map = map;
         this.active = false;
+        this.calculating = false;
+        this.abortController = null; // Pour annuler un calcul en cours
         this.center = null;
         this.marker = null;
         
         // --- CONFIGURATION ---
         this.radius = 500; 
-        this.observerHeight = 1.7; // Hauteur des yeux (homme moyen)
-        this.targetHeight = 1;     // On regarde le sol (0m). Mettre 1m pour voir des objets.
-        this.numRays = 240;        // nb rayons => précision de 360°/numRays (en degré)
+        this.observerHeight = 2.0; // Hauteur des yeux
+        this.numRays = 180;        // 180 rayons suffisent souvent (1 tous les 2°)
+        this.precision = 4;        // Pas d'échantillonnage (mètres). Plus petit = plus précis mais lent.
         
-        // Calques à considérer comme obstacles (Bâtiments)
-        this.buildingLayers = ['building', 'buildings-3d'];
+        // Calques à considérer comme obstacles visuels (Bâtiments)
+        // Note: queryRenderedFeatures ne marche que sur ce qui est AFFICHÉ à l'écran.
+        this.buildingLayers = ['building', 'buildings-3d', 'building-extrusion'];
 
         this.initLayers();
         this.bindUI();
@@ -28,71 +31,93 @@ export class ViewshedTool {
             slider.oninput = (e) => {
                 this.radius = parseInt(e.target.value);
                 if (radiusDisplay) radiusDisplay.innerText = this.radius;
-                
-                // Debounce pour ne pas figer le navigateur pendant le glissement
-                if (this.timer) clearTimeout(this.timer);
-                this.timer = setTimeout(() => {
-                    if (this.center) this.computeViewshed();
-                }, 50);
+                // On ne relance pas le calcul automatiquement s'il est lourd, 
+                // on attend un clic ou on le fait en debounce long si besoin.
             };
         }
     }
 
     initLayers() {
-        // 1. Source Base (Le disque rouge complet)
-        this.map.addSource('viewshed-base', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-        });
+        // 1. Source Base (Zone d'étude - Disque Rouge)
+        if(!this.map.getSource('viewshed-base')) {
+            this.map.addSource('viewshed-base', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+        }
         
-        // 2. Source Result (Le polygone vert de ce qui est visible)
-        this.map.addSource('viewshed-result', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-        });
+        // 2. Source Result (Zone visible - Polygone Vert)
+        if(!this.map.getSource('viewshed-result')) {
+            this.map.addSource('viewshed-result', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+        }
 
-        // CALQUE ROUGE (Tout ce qui est dans le rayon, supposé caché par défaut)
-        this.map.addLayer({
-            id: 'layer-viewshed-red',
-            type: 'fill',
-            source: 'viewshed-base',
-            paint: { 
-                'fill-color': '#e74c3c', 
-                'fill-opacity': 0.2,
-                'fill-outline-color': '#c0392b'
-            }
-        });
+        // CALQUE ROUGE (Zone théorique)
+        if(!this.map.getLayer('layer-viewshed-red')) {
+            this.map.addLayer({
+                id: 'layer-viewshed-red',
+                type: 'fill',
+                source: 'viewshed-base',
+                paint: { 
+                    'fill-color': '#e74c3c', 
+                    'fill-opacity': 0.15,
+                    'fill-outline-color': '#c0392b'
+                }
+            });
+        }
 
-        // CALQUE VERT (Ce qui est réellement visible, par-dessus le rouge)
-        this.map.addLayer({
-            id: 'layer-viewshed-green',
-            type: 'fill',
-            source: 'viewshed-result',
-            paint: { 
-                'fill-color': '#2ecc71', 
-                'fill-opacity': 0.6, // Plus opaque pour bien couvrir le rouge
-                'fill-outline-color': '#27ae60' 
-            }
-        });
+        // CALQUE VERT (Zone visible)
+        if(!this.map.getLayer('layer-viewshed-green')) {
+            this.map.addLayer({
+                id: 'layer-viewshed-green',
+                type: 'fill',
+                source: 'viewshed-result',
+                paint: { 
+                    'fill-color': '#00ff00', 
+                    'fill-opacity': 0.5,
+                    'fill-outline-color': '#27ae60' 
+                }
+            });
+        }
     }
 
     toggle() {
         this.active = !this.active;
-        this.reset();
         
-        const btn = document.getElementById('btn-viewshed');
-        if (btn) {
-            if (this.active) {
-                btn.classList.add('active-tool');
-                btn.style.backgroundColor = '#e74c3c';
-                btn.innerHTML = '❌ Arrêter';
-                this.map.getCanvas().style.cursor = 'crosshair';
-            } else {
-                btn.classList.remove('active-tool');
-                btn.style.backgroundColor = '';
-                btn.innerHTML = '🔭 Calculer Viewshed';
-                this.map.getCanvas().style.cursor = '';
+        // Si on désactive, on nettoie tout
+        if (!this.active) {
+            this.reset();
+            if (this.calculating) {
+                this.abortController.abort(); // Arrêter le calcul en cours
+                this.calculating = false;
             }
+        }
+
+        this.updateUIButton();
+    }
+
+    updateUIButton(progress = null) {
+        const btn = document.getElementById('btn-viewshed');
+        if (!btn) return;
+
+        if (this.active) {
+            this.map.getCanvas().style.cursor = 'crosshair';
+            btn.classList.add('active-tool');
+            
+            if (this.calculating) {
+                btn.style.backgroundColor = '#f39c12'; // Orange pendant le calcul
+                btn.innerHTML = progress ? `⏳ ${progress}%` : '⏳ Calcul...';
+            } else {
+                btn.style.backgroundColor = '#e74c3c'; // Rouge pour arrêter
+                btn.innerHTML = '❌ Arrêter';
+            }
+        } else {
+            this.map.getCanvas().style.cursor = '';
+            btn.classList.remove('active-tool');
+            btn.style.backgroundColor = '';
+            btn.innerHTML = '🔭 Calculer Viewshed';
         }
     }
 
@@ -101,142 +126,178 @@ export class ViewshedTool {
         this.center = null;
         this.map.getSource('viewshed-base').setData({ type: 'FeatureCollection', features: [] });
         this.map.getSource('viewshed-result').setData({ type: 'FeatureCollection', features: [] });
+        document.getElementById('los-result').innerText = "";
     }
 
     onClick(e) {
-        if (!this.active) return;
+        if (!this.active || this.calculating) return; // Évite double clic pendant calcul
+
         this.center = e.lngLat;
         
+        // Marker
         if (this.marker) this.marker.remove();
-        this.marker = new maplibregl.Marker({ color: "#2c3e50" })
+        this.marker = new maplibregl.Marker({ color: "#2980b9" })
             .setLngLat(this.center)
             .addTo(this.map);
 
-        this.computeViewshed();
+        this.startAsyncCalculation();
     }
 
-    computeViewshed() {
-        if (!this.center) return;
+    // --- LE CŒUR DU SYSTÈME ASYNCHRONE ---
+    async startAsyncCalculation() {
+        this.calculating = true;
+        this.abortController = new AbortController();
+        const signal = this.abortController.signal;
+        
+        this.updateUIButton(0);
+        document.getElementById('los-result').innerText = "Initialisation...";
 
-        // 1. Dessiner le cercle ROUGE complet (Base)
+        // 1. Dessiner la zone rouge (feedback immédiat)
         const redCircle = this.createCircleGeoJSON(this.center, this.radius);
         this.map.getSource('viewshed-base').setData(redCircle);
 
-        // --- PRÉ-CALCULS ---
+        // Données initiales
         const startElev = (this.map.queryTerrainElevation(this.center) || 0) + this.observerHeight;
-        const activeBuildingLayers = this.buildingLayers.filter(l => this.map.getLayer(l));
+        const vertices = [];
         
-        // Facteurs de conversion Lat/Lng -> Mètres
+        // Facteurs de conversion (approximation locale)
         const latRad = this.center.lat * Math.PI / 180;
         const metersPerDegLng = 111320 * Math.cos(latRad);
         const metersPerDegLat = 110574;
 
-        const vertices = [];
-        
-        // --- LANCER DE RAYONS ---
+        try {
+            let raysCompleted = 0;
+            
+            // On lance le générateur de rayons
+            // Cela permet de rendre la main au navigateur entre chaque paquet de rayons
+            const generator = this.rayGenerator(startElev, metersPerDegLng, metersPerDegLat);
+
+            for await (const vertex of generator) {
+                if (signal.aborted) throw new Error("Annulé par utilisateur");
+                
+                vertices.push(vertex);
+                raysCompleted++;
+
+                // Mise à jour de l'UI tous les 10 rayons
+                if (raysCompleted % 10 === 0) {
+                    const pct = Math.round((raysCompleted / this.numRays) * 100);
+                    this.updateUIButton(pct);
+                }
+            }
+
+            // Fermer le polygone
+            if (vertices.length > 0) vertices.push(vertices[0]);
+
+            // Résultat final
+            this.map.getSource('viewshed-result').setData({
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [vertices]
+                }
+            });
+
+            document.getElementById('los-result').innerText = `Terminé. Rayon: ${this.radius}m`;
+
+        } catch (err) {
+            console.log("Calcul interrompu:", err.message);
+            document.getElementById('los-result').innerText = "Interrompu.";
+        } finally {
+            this.calculating = false;
+            this.updateUIButton(); // Reset bouton
+        }
+    }
+
+    /**
+     * Générateur asynchrone qui traite les rayons par lots (Batch processing)
+     */
+    async *rayGenerator(startElev, metersPerDegLng, metersPerDegLat) {
+        // Pré-calculer les layers de bâtiments actifs pour éviter de le faire dans la boucle
+        const activeLayers = this.buildingLayers.filter(l => this.map.getLayer(l));
+
         for (let i = 0; i <= this.numRays; i++) {
-            // Boucler le cercle
+            // Pause pour laisser le navigateur dessiner (tous les 5 rayons)
+            // C'est ce qui empêche le freeze !
+            if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+
             const angleDeg = (i / this.numRays) * 360;
             const angleRad = (angleDeg * Math.PI) / 180;
             
-            // Vecteur unitaire (direction)
             const dirLng = Math.cos(angleRad) / metersPerDegLng;
             const dirLat = Math.sin(angleRad) / metersPerDegLat;
 
-            // Variables d'état du rayon
-            let dist = 0;
-            let maxSlope = -Infinity; // Pente maximale rencontrée
-            let visibleDist = 0;      // Jusqu'où on voit actuellement
-            
-            // Optimisation : On ne vérifie pas les bâtiments si le terrain bloque déjà
-            let terrainBlocked = false; 
+            // --- ALGORITHME DE PENTE MAX (HORIZON) ---
+            let maxSlope = -Infinity;
+            let currentDist = 0;
+            let visibleDist = 0; // On initialise à 0, si on voit rien
 
-            // BOUCLE DE DISTANCE (STEP)
-            while (dist < this.radius) {
-                // --- PAS DYNAMIQUE (Crucial pour les murs) ---
-                // Près : 1m (précision max), Loin : 15m (performance)
-                let step = (dist < 50) ? 1.5 : (dist < 200 ? 5 : 15);
-                
-                dist += step;
-                if (dist > this.radius) dist = this.radius;
+            // Pas d'échantillonnage dynamique
+            // On commence petit (près de l'observateur) et on augmente
+            while (currentDist < this.radius) {
+                const step = (currentDist < 50) ? 2 : (currentDist < 200 ? 5 : 10);
+                currentDist += step;
+                if (currentDist > this.radius) currentDist = this.radius;
 
-                const curLng = this.center.lng + (dirLng * dist);
-                const curLat = this.center.lat + (dirLat * dist);
-                const pos = new maplibregl.LngLat(curLng, curLat);
+                const lng = this.center.lng + (dirLng * currentDist);
+                const lat = this.center.lat + (dirLat * currentDist);
+                const pos = { lng, lat };
 
                 // 1. Altitude du SOL
                 const groundZ = this.map.queryTerrainElevation(pos) || 0;
-                let obstacleZ = groundZ;
+                
+                // Calcul de la pente vers ce point au sol
+                // Pente = (Hauteur Cible - Hauteur Yeux) / Distance
+                let slope = (groundZ - startElev) / currentDist;
 
-                // 2. Calcul de la Pente vers le sol
-                const slopeToGround = (groundZ - startElev) / dist;
+                let isVisible = false;
 
-                // Si le sol lui-même est caché par une colline précédente
-                if (slopeToGround < maxSlope) {
-                    terrainBlocked = true;
-                } else {
-                    // Le sol est visible, on met à jour la pente max vue
-                    maxSlope = slopeToGround;
-                    visibleDist = dist;
-                    terrainBlocked = false;
+                // Si la pente du sol est supérieure à tout ce qu'on a vu avant, on voit le sol !
+                if (slope >= maxSlope) {
+                    maxSlope = slope;
+                    isVisible = true;
+                    visibleDist = currentDist; // On voit au moins jusqu'ici
                 }
 
-                // 3. Vérification des BÂTIMENTS (seulement si le sol est visible)
-                // Cela évite des appels coûteux si on est déjà derrière une colline
-                if (!terrainBlocked) {
-                    const screenPoint = this.map.project(pos);
-                    const features = this.map.queryRenderedFeatures(screenPoint, { 
-                        layers: activeBuildingLayers 
-                    });
-
+                // 2. Vérification OBSTACLES (Bâtiments)
+                // On ne vérifie que si le sol est visible (sinon on est déjà derrière une colline)
+                // OU si on est très proche (car un mur peut être devant nous même en montée)
+                if (isVisible || currentDist < 50) {
+                    // Projection écran pour queryRenderedFeatures
+                    // Attention: queryRenderedFeatures est lourd, on l'utilise avec parcimonie
+                    const point = this.map.project(pos);
+                    
+                    // On vérifie s'il y a un bâtiment à ce pixel
+                    const features = this.map.queryRenderedFeatures(point, { layers: activeLayers });
+                    
                     if (features.length > 0) {
                         const f = features[0];
-                        const h = f.properties.height || f.properties.render_height || 0;
-                        
-                        // Le toit du bâtiment
+                        // Hauteur du bâtiment (fallback standard OSM)
+                        const h = f.properties.height || f.properties.render_height || 10; 
                         const roofZ = groundZ + h;
-                        const slopeToRoof = (roofZ - startElev) / dist;
+                        
+                        const roofSlope = (roofZ - startElev) / currentDist;
 
-                        // Si le toit bloque la vue (sa pente est supérieure à la pente actuelle)
-                        if (slopeToRoof > maxSlope) {
-                            maxSlope = slopeToRoof;
-                            // On voit le mur du bâtiment, mais on ne voit rien derrière
-                            // Donc on arrête le rayon ICI.
-                            visibleDist = dist; 
-                            break; // STOP : On a tapé un mur
+                        if (roofSlope > maxSlope) {
+                            maxSlope = roofSlope;
+                            // C'est un mur. On voit le mur, mais pas derrière.
+                            visibleDist = currentDist;
+                            // On arrête ce rayon ici, on a percuté un obstacle
+                            break; 
                         }
                     }
                 } else {
-                    // Si le sol est bloqué par le relief, on arrête tout de suite ? 
-                    // Non, car un bâtiment haut pourrait dépasser de la colline.
-                    // Mais dans un algo simple, on considère souvent que si le sol est caché, c'est fini.
-                    // Pour plus de précision relief : on continue.
-                    // Pour perf : on peut break ici.
-                    
-                    // Choix Précision : On break si on est "vraiment" enterré
-                    if (maxSlope - slopeToGround > 0.1) break; 
+                    // Si on est bloqué par le terrain (la colline devant est plus haute)
+                    // On continue quand même la boucle car une montagne plus loin peut dépasser (Peak)
+                    // Sauf si la "contre-pente" est énorme, mais restons simples.
                 }
-
-                if (dist >= this.radius) visibleDist = dist;
             }
 
-            // Fin du rayon
+            // Calcul du point final visible pour ce rayon
             const endLng = this.center.lng + (dirLng * visibleDist);
             const endLat = this.center.lat + (dirLat * visibleDist);
-            vertices.push([endLng, endLat]);
+            
+            yield [endLng, endLat];
         }
-
-        // Fermeture du polygone
-        vertices.push(vertices[0]);
-
-        // Mise à jour de la source VERTE
-        this.map.getSource('viewshed-result').setData({
-            type: 'Feature',
-            geometry: {
-                type: 'Polygon',
-                coordinates: [vertices]
-            }
-        });
     }
 
     createCircleGeoJSON(center, radiusInMeters) {
