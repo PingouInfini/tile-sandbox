@@ -106,13 +106,17 @@
 
       # Construire l'application via un conteneur temporaire
       docker run --rm -it \
+        -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
         -v /docker/appdata/tileserver/overpass-turbo/html:/app \
-        node:22-alpine sh -c "apk add --no-cache git && \
+        node:22-alpine sh -c "
+        apk add --no-cache git && \
+        corepack enable && \
         git config --global --add safe.directory /app && \
         git clone --depth 1 https://github.com/tyrasd/overpass-turbo.git /app && \
         cd /app && \
-        npm install && \
-        npm run build"
+        pnpm install && \
+        pnpm run build
+      "
       ```
 
     - Modifier les sources compiler pour s'appuyer sur le Nominatim déployé en local (⚠️adapter l'ip)
@@ -140,14 +144,9 @@
 
     - Adaptation du html pour intégrer Leaflet
       ```bash
-      sudo nano /docker/appdata/tileserver/overpass-turbo/html/dist/index.html
-      ```
-
-      > ⚠️ Dans le \<head\> AVANT les scripts de l’app, ajouter :
-
-      ```
-      <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-      <script src="/vendor/leaflet/leaflet.js"></script>
+      NEW_INDEX="/docker/appdata/tileserver/overpass-turbo/html/dist/index.html"
+      sudo sed -i 's|</head>|<link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />\n</head>|' "$NEW_INDEX"
+      sudo sed -i 's|<script type="module"|<script src="/vendor/leaflet/leaflet.js"></script>\n    <script type="module"|' "$NEW_INDEX"
       ```
 
     - Créer le fichier config.js (⚠️adapter l'ip) **🚧 FIXME**
