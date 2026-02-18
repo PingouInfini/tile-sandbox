@@ -114,6 +114,16 @@
         git config --global --add safe.directory /app && \
         git clone --depth 1 https://github.com/tyrasd/overpass-turbo.git /app && \
         cd /app && \
+        
+        # 1. On retire l'exclusion de leaflet pour qu'il soit bien traité par le build
+        sed -i 's/exclude: \[\"leaflet\"\]/exclude: []/' vite.config.mts && \
+        
+        # 2. On ajoute L: 'leaflet' dans le plugin inject (juste avant $)
+        sed -i \"s/\\\$: \\\"jquery\\\",/L: 'leaflet', \\\$: \\\"jquery\\\",/\" vite.config.mts && \
+        
+        # 3. On force quand même le global dans index.ts pour les vieux plugins
+        sed -i \"1i import L from 'leaflet'; (window as any).L = L;\" js/index.ts && \
+        
         pnpm install && \
         pnpm run build
       "
@@ -122,31 +132,6 @@
     - Modifier les sources compiler pour s'appuyer sur le Nominatim déployé en local (⚠️adapter l'ip)
       ```bash
       sudo find /docker/appdata/tileserver/overpass-turbo/html/dist -type f -exec sed -i 's|https://nominatim.openstreetmap.org|http://192.168.10.3:8891|g' {} +
-      ```
-
-    - Récupération de Leaflet
-      ```bash
-      sudo ls >/dev/null 2>&1
-
-      BASE_DIR="/docker/appdata/tileserver/overpass-turbo/html/dist/vendor/leaflet"
-
-      sudo mkdir -p "$BASE_DIR/images"
-
-      # Fichiers principaux Leaflet
-      sudo wget -P "$BASE_DIR" https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
-      sudo wget -P "$BASE_DIR" https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
-
-      # Images
-      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png
-      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png
-      sudo wget -P "$BASE_DIR/images" https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png
-      ```
-
-    - Adaptation du html pour intégrer Leaflet
-      ```bash
-      NEW_INDEX="/docker/appdata/tileserver/overpass-turbo/html/dist/index.html"
-      sudo sed -i 's|</head>|<link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />\n</head>|' "$NEW_INDEX"
-      sudo sed -i 's|<script type="module"|<script src="/vendor/leaflet/leaflet.js"></script>\n    <script type="module"|' "$NEW_INDEX"
       ```
 
     - Créer le fichier config.js (⚠️adapter l'ip) **🚧 FIXME**
