@@ -90,3 +90,63 @@ Exemples de requetes
     // Affichage
     out center;
     ```
+
+-----------------------------------
+
+### Analyse OSINT de photo
+
+- A partir d'une image "1-photo_brute.jpg"
+- On peut identifier des éléments remarquables : "2-photo_analyse.jpg"
+- On lance une recherche sur:
+  - 2 emplacements espacés de moins de 50 mètres
+    - *(en jaune)* l'un à un nom terminant par "ISES"
+    - *(en bleu)* l'autre à un nom terminant par "Espagnole"
+  - *(en rouge)* Avec un arbre à moins de 35 mètres
+  - *(en cyan)* Avec une ligne de tramway à moins de 50 mètres
+  - *(en vert)* Avec un arrêt de bus à moins de 50 mètres
+- On lance une recherche (avec bbox sur la France)
+
+    ```
+    [out:json][timeout:700][maxsize:2000000000][bbox:{{bbox}}];
+
+    // --- ÉTAPE 1 : IDENTIFICATION DES CANDIDATS INITIAUX ---
+    // On cherche un élément avec le nom "Espagnole" et on l'utilise comme référence.
+    // Puis, on cherche les éléments "ISES" autour de cette référence.
+    node[name~"Espagnole",i]->.ref_initiale;
+    node(around.ref_initiale:50)[name~"ISES",i]->.candidats_initiaux;
+
+    // --- ÉTAPE 2 : FILTRE TRAMWAY ---
+    // On cherche les lignes de tramway autour des candidats trouvés à l'étape 1.
+    way(around.candidats_initiaux:50)[railway=tram]->.trams_autour;
+    // On filtre les candidats pour ne garder que ceux proches d'un tramway.
+    nwr.candidats_initiaux(around.trams_autour:50)->.candidats_tramway;
+
+    // --- ÉTAPE 3 : FILTRE BUS ---
+    // On cherche les arrêts de bus autour des candidats ayant un tramway proche.
+    nwr(around.candidats_tramway:50)[highway=bus_stop]->.bus_autour;
+    // On filtre encore pour ne garder que ceux qui sont proches d'un arrêt de bus.
+    nwr.candidats_tramway(around.bus_autour:50)->.candidats_bus;
+
+    // --- ÉTAPE 4 : FILTRE ARBRES ---
+    // On cherche les arbres autour des derniers candidats filtrés (candidats_bus).
+    node(around.candidats_bus:35)[natural=tree]->.arbres_autour;
+    // On filtre pour ne garder que les candidats ayant des arbres à proximité.
+    nwr.candidats_bus(around.arbres_autour:35)->.candidats_finals;
+
+    // --- AFFICHAGE FINAL ---
+    // On affiche les éléments autour du candidat final (le bâtiment "gagnant").
+    // On montre le contexte immédiat autour du bâtiment, incluant tramways, bus et arbres.
+    (
+    .candidats_finals;
+    // On affiche les tramways autour du bâtiment final
+    way(around.candidats_finals:50)[railway=tram];
+    // On affiche les arrêts de bus autour du bâtiment final
+    nwr(around.candidats_finals:50)[highway=bus_stop];
+    // On affiche les arbres autour du bâtiment final
+    node(around.candidats_finals:35)[natural=tree];
+    // On affiche le bâtiment "Espagnole" à proximité du gagnant
+    nwr(around.candidats_finals:50)[name~"Espagnole",i];
+    );
+
+    out geom;
+    ```
