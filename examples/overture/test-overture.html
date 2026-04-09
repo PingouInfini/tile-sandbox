@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Overture Full Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+
+  <style>
+    body { margin: 0; }
+    #map { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+
+      sources: {
+
+        // 🏢 Buildings (3D)
+        buildings: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/buildings.pmtiles"
+        },
+
+        // 🛣 Transportation
+        transport: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/transportation.pmtiles"
+        },
+
+        // 🌍 Base (land, water, etc.)
+        base: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/base.pmtiles"
+        },
+
+        // 📍 Places
+        places: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/places.pmtiles"
+        },
+
+        // 🏠 Addresses
+        addresses: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/addresses.pmtiles"
+        },
+
+        // 🗺 Divisions (admin boundaries)
+        divisions: {
+          type: "vector",
+          url: "pmtiles://http://192.168.10.3:8898/pmtiles/divisions.pmtiles"
+        }
+      },
+
+      layers: [
+
+        // =========================
+        // 🌍 BASE (land/water)
+        // =========================
+        {
+          id: "base-fill",
+          type: "fill",
+          source: "base",
+          "source-layer": "land",
+          paint: {
+            "fill-color": "#e9e5dc"
+          }
+        },
+
+        {
+          id: "water-fill",
+          type: "fill",
+          source: "base",
+          "source-layer": "water",
+          paint: {
+            "fill-color": "#a9c7e6"
+          },
+		  filter: ["==", ["geometry-type"], "Polygon"] 
+        },
+		
+		{
+          id: "water-line",
+          type: "line",
+          source: "base",
+          "source-layer": "water",
+          paint: {
+            "line-color": "#a9c7e6"
+          },
+		  filter: ["==", ["geometry-type"], "LineString"] 
+        },
+
+        // =========================
+        // 🛣 TRANSPORT
+        // =========================
+        {
+          id: "roads",
+          type: "line",
+          source: "transport",
+          "source-layer": "segment",
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 1.2
+          }
+        },
+
+        // =========================
+        // 🏢 BUILDINGS 3D
+        // =========================
+        {
+          id: "building-parts",
+          type: "fill-extrusion",
+          source: "buildings",
+          "source-layer": "building_part",
+          paint: {
+            "fill-extrusion-color": [
+              "coalesce",
+              ["get", "roof_color"],
+              "#cccccc"
+            ],
+            "fill-extrusion-height": [
+              "coalesce",
+              ["get", "height"],
+              10
+            ],
+            "fill-extrusion-base": [
+              "coalesce",
+              ["get", "min_height"],
+              0
+            ],
+            "fill-extrusion-opacity": 0.95
+          }
+        },
+
+        {
+          id: "building-fallback",
+          type: "fill-extrusion",
+          source: "buildings",
+          "source-layer": "building",
+          filter: ["==", ["get", "has_parts"], false],
+          paint: {
+            "fill-extrusion-color": "#aaaaaa",
+            "fill-extrusion-height": [
+              "coalesce",
+              ["get", "height"],
+              10
+            ],
+            "fill-extrusion-base": 0,
+            "fill-extrusion-opacity": 0.8
+          }
+        },
+
+        // =========================
+        // 📍 PLACES
+        // =========================
+        //{
+        //  id: "places",
+        //  type: "circle",
+        //  source: "places",
+        //  "source-layer": "place",
+        //  paint: {
+        //    "circle-radius": 3,
+        //    "circle-color": "#ff6b6b"
+        //  }
+        //},
+
+        // =========================
+        // 🏠 ADDRESSES
+        // =========================
+        //{
+        //  id: "addresses",
+        //  type: "circle",
+        //  source: "addresses",
+        //  "source-layer": "address",
+        //  paint: {
+        //    "circle-radius": 2,
+        //    "circle-color": "#333333"
+        //  }
+        //},
+
+        // =========================
+        // 🗺 ADMIN BOUNDARIES
+        // =========================
+        {
+          id: "divisions",
+          type: "line",
+          source: "divisions",
+          "source-layer": "division",
+          paint: {
+            "line-color": "#888",
+            "line-dasharray": [2, 2],
+            "line-width": 1
+          }
+        }
+      ]
+    },
+
+    center: [2.35, 48.85],
+    zoom: 14,
+    pitch: 60,
+    bearing: -20,
+    antialias: true
+  });
+
+  map.addControl(new maplibregl.NavigationControl());
+</script>
+
+</body>
+</html>
