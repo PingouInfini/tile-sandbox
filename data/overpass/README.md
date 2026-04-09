@@ -150,3 +150,47 @@ Exemples de requetes
 
     out geom;
     ```
+
+
+    ```
+    [out:json][timeout:800][maxsize:2000000000][bbox:{{bbox}}];
+
+    // --- ÉTAPE 1 : IDENTIFICATION DES POINTS DE RÉFÉRENCE ---
+    // On identifie d'abord les trois types d'infrastructures cibles.
+
+    // 1. Les hôpitaux
+    nwr[amenity=hospital]->.hopitaux;
+
+    // 2. Les restaurants "Planet Sushi" (sensible à la casse via ,i)
+    nwr[amenity=restaurant][name~"Planet Sushi",i]->.planet_sushi;
+
+    // 3. Les écoles maternelles
+    nwr[amenity=kindergarten]->.ecoles_maternelles;
+
+    // --- ÉTAPE 2 : FILTRAGE EN ENTONNOIR ---
+
+    // On commence par le critère le plus restrictif (souvent le nom précis du restaurant)
+    // pour réduire immédiatement la masse de données à traiter.
+
+    // Trouver tous les bâtiments à moins de 20m d'un Planet Sushi
+    nwr[building](around.planet_sushi:20)->.candidats_sushi;
+
+    // Parmi ces bâtiments, on ne garde que ceux à moins de 350m d'un hôpital
+    nwr.candidats_sushi(around.hopitaux:350)->.candidats_hopital;
+
+    // Enfin, on filtre pour ne garder que ceux à moins de 350m d'une école maternelle
+    nwr.candidats_hopital(around.ecoles_maternelles:350)->.candidats_finals;
+
+    // --- AFFICHAGE FINAL ---
+    // On affiche les bâtiments trouvés et les éléments qui ont servi au filtrage pour vérification visuelle.
+    (
+      .candidats_finals;
+      
+      // Optionnel : afficher les points d'intérêts autour pour vérifier la cohérence
+      nwr.planet_sushi(around.candidats_finals:20);
+      nwr.hopitaux(around.candidats_finals:350);
+      nwr.ecoles_maternelles(around.candidats_finals:350);
+    );
+
+    out geom;
+    ```
