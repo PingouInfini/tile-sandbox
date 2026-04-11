@@ -46,7 +46,7 @@ services:
     volumes:
       - /docker/appdata/tileserver/graphhopper/data:/data
     environment:
-      - JAVA_OPTS=-Xmx4g -Xms2g
+      - JAVA_OPTS=-Xmx4g -Xms2g -Ddw.graphhopper.graph.encoded_values=car_access,car_average_speed,country,road_class,roundabout,max_speed,foot_access,foot_average_speed,foot_priority,foot_road_access,hike_rating,average_slope,bike_access,bike_average_speed,bike_priority,bike_road_access,bike_network,mtb_rating,ferry_speed,road_environment
     command: >
       --input /data/france-latest.osm.pbf
       --graph-cache /data/graph-cache
