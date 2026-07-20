@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TiTiler Offline - Multi-couches</title>
+
+    <!-- Chargement de Leaflet en local -->
+    <link rel="stylesheet" href="leaflet-1.9.4.css" />
+
+    <style>
+        html,
+        body,
+        #map {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #dadada;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <!-- Chargement de Leaflet en local -->
+    <script src="leaflet-1.9.4.js"></script>
+
+    <script>
+        // 1. Initialisation de la carte (centrée sur la France pour bien voir les 3 couches)
+        const map = L.map('map').setView([46.5, 2.0], 5);
+
+        // 2. Préparation de l'URL de base de votre serveur TiTiler
+        const titilerBaseUrl = "http://192.168.10.2:18082/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png";
+
+        // 3. Déclaration des couches (du bas vers le haut)
+
+        // COUCHE DU BAS (zIndex: 1)
+        const layerBlueMarble = L.tileLayer(`${titilerBaseUrl}?url=/data/bluemarble_COG.tif`, {
+            maxZoom: 25,
+            zIndex: 1, // Assure que cette couche reste tout au fond
+            attribution: 'Blue Marble'
+        });
+
+        // COUCHE DU MILIEU (zIndex: 2)
+        const layerDeuxSevres = L.tileLayer(`${titilerBaseUrl}?url=/data/79_DEUX-SEVRES_F30.tif`, {
+            maxZoom: 25,
+            zIndex: 2, // S'affiche au-dessus de Blue Marble
+            attribution: 'Deux Sèvres'
+        });
+
+        // COUCHE DU HAUT (zIndex: 3)
+        const layerParis = L.tileLayer(`${titilerBaseUrl}?url=/data/paris_sudouest_3857_COG.tif`, {
+            maxZoom: 25,
+            zIndex: 3, // S'affiche tout au-dessus
+            attribution: 'Paris Sud-Ouest'
+        });
+
+        // 4. Ajout des couches sur la carte par défaut
+        layerBlueMarble.addTo(map);
+        layerDeuxSevres.addTo(map);
+        layerParis.addTo(map);
+
+        // Les fonds de carte (un seul affichable à la fois, avec bouton radio)
+        const baseMaps = {
+            "Blue Marble (Fond mondial)": layerBlueMarble
+        };
+
+        // Les couches par-dessus (activables indépendamment avec cases à cocher)
+        const overlayMaps = {
+            "Deux Sèvres": layerDeuxSevres,
+            "Paris Sud-Ouest": layerParis
+        };
+
+        // On passe baseMaps en premier argument, overlayMaps en second
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // Ajoute le petit bouton en haut à droite de la carte
+        // On ajoute autoZIndex: false pour empêcher Leaflet d'écraser nos réglages
+        L.control.layers(null, overlayMaps, { collapsed: false, autoZIndex: false }).addTo(map);
+
+    </script>
+</body>
+
+</html>
